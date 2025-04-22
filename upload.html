@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload and Display Data</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0a0a;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 2000px;
+      margin: auto;
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+
+    }
+
+    .upload-section {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .upload-box {
+      border: 2px dashed #6936f5;
+      padding: 15px;
+      width: 250px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+    }
+
+    .button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #6936f5;
+      color: white;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .table-container {
+      margin-top: 20px;
+      width: 100%;
+      max-height: 500px;
+      overflow-x: auto;
+      overflow-y: auto;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #222;
+      table-layout: auto;
+    }
+
+    th,
+    td {
+      min-width: 120px;
+      border: 1px solid white;
+      padding: 6px;
+      text-align: left;
+      font-size: 12px;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+
+    th {
+      background: #333;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    tr:nth-child(even) {
+      background: #2a2a2a;
+    }
+
+    .play-button {
+      background: #34c759;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .screenshot-img {
+      width: 50px;
+      height: auto;
+      cursor: pointer;
+    }
+
+    .pass-status {
+      color: green;
+      font-weight: bold;
+    }
+
+    .fail-status {
+      color: red;
+      font-weight: bold;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background: #1e1e1e;
+      padding: 5px;
+      border-radius: 5px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .status-summary {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      background-color: #6936f5;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .status-summary-item {
+      margin-bottom: 5px;
+    }
+
+    .pass-status {
+      color: #28a745;
+    }
+
+    .fail-status {
+
+      color: #dc3545;
+    }
+
+    .confusion-button {
+      background: #6936f5;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .confusion-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 99;
+    }
+
+    .confusion-content {
+      background-color: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      width: 80%;
+      max-width: 800px;
+      margin: 0px auto;
+      position: relative;
+    }
+
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    /* New styles for row processing */
+    tr.processing {
+      background-color: rgba(105, 54, 245, 0.3) !important;
+    }
+
+    tr.processed-pass {
+      background-color: rgba(40, 167, 69, 0.2) !important;
+    }
+
+    tr.processed-fail {
+      background-color: rgba(220, 53, 69, 0.2) !important;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .summary-box {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      background-color: #1a1a1a;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid #333;
+    }
+
+    .summary-item {
+      margin-bottom: 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .summary-label {
+      color: #999;
+    }
+
+    .summary-value {
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 4px;
+      min-width: 30px;
+      text-align: center;
+    }
+
+    .pass-value {
+      background-color: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+
+    .fail-value {
+      background-color: rgba(220, 53, 69, 0.2);
+      color: #dc3545;
+    }
+
+    .popup-value {
+      background-color: rgba(105, 54, 245, 0.2);
+      color: #6936f5;
+    }
+
+    .button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .button.primary {
+      background: #6936f5;
+    }
+
+    .button.success {
+      background: #34c759;
+    }
+
+    .button.secondary {
+      background: #555;
+    }
+
+    /* Add these new styles */
+    .data-generator-row {
+      background-color: #2a2a2a;
+    }
+    
+    .data-generator-row td {
+      padding: 12px;
+    }
+    
+    .bounds-match {
+      color: #28a745;
+      font-weight: bold;
+    }
+    
+    .bounds-differ {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #6936f5;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Update the agent-button styles */
+    .agent-button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #6936f5;
+      color: white;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-left: 10px;
+    }
+
+    .agent-button:hover {
+      background: #5525d4;
+    }
+
+    .agent-button.active {
+      background: #5525d4;
+      box-shadow: 0 0 10px rgba(105, 54, 245, 0.5);
+    }
+
+    /* Add styles for the data generator section */
+    #dataGeneratorSection {
+      width: 100%;
+      margin-top: 20px;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #dataGeneratorTable {
+      margin-top: 15px;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #dataGeneratorTable th,
+    #dataGeneratorTable td {
+      padding: 12px;
+      text-align: left;
+      border: 1px solid #333;
+    }
+
+    #dataGeneratorTable th {
+      background: #333;
+      color: white;
+    }
+
+    /* Add a back to home button */
+    .back-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 8px 16px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .back-button:hover {
+      background-color: #444;
+      transform: translateY(-2px);
+    }
+    
+    .back-arrow {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-left: 2px solid white;
+      border-bottom: 2px solid white;
+      transform: rotate(45deg);
+    }
+    
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <button class="back-button" onclick="window.location.href='selection.html'">
+      <span class="back-arrow"></span> Back
+    </button>
+    
+    <h2>Popup Agent</h2>
+    <div class="upload-section">
+      <label class="upload-box">
+        <input type="file" id="excelFile" accept=".xlsx, .xls" hidden>
+        Upload Excel Sheet
+      </label>
+    </div>
+    
+    <div class="button-container">
+      <button class="button primary" onclick="processExcel()">Process Data</button>
+      <button class="button success" id="runAllButton" onclick="runAllRequests()">Run All</button>
+      <button class="button secondary" id="generateReportButton" onclick="generateReport()" disabled>Generate Report</button>
+    </div>
+
+    <div class="summary-box">
+      <div class="summary-item">
+        <span class="summary-label">Pass:</span>
+        <span class="summary-value pass-value" id="passCount">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Fail:</span>
+        <span class="summary-value fail-value" id="failCount">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">True Popups:</span>
+        <span class="summary-value popup-value" id="truePopupCounter">0</span>
+      </div>
+    </div>
+
+    <!-- Progress bar for Run All operation -->
+    <div id="progressContainer" style="display: none; width: 100%; margin-top: 15px; text-align: center;">
+      <div style="width: 100%; background-color: #333; border-radius: 5px; overflow: hidden;">
+        <div id="progressBar" style="height: 20px; width: 0%; background-color: #34c759; transition: width 0.3s;"></div>
+      </div>
+      <div id="progressText" style="margin-top: 5px; font-size: 14px; color: white;">0%</div>
+    </div>
+
+    <div class="table-container">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>App</th>
+            <th>Actual Value</th>
+            <th>Screenshot</th>
+            <th>Bound</th>
+            <th>Element</th>
+            <th>JSON</th>
+            <th>XML Name</th>
+            <th>Play</th>
+            <th>Request Body</th>
+            <th>Response</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let excelData = [];
+    let globalTruePositive = 0;
+    let globalFalseNegative = 0;
+    let globalFalsePositive = 0;
+    let globalTrueNegative = 0;
+    let isProcessingAll = false; // Flag to track if batch processing is in progress
+    let processedRequests = new Set(); // Track which rows have been processed
+    let dataGeneratorResults = [];
+
+    // Create confusion matrix popup when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      createConfusionMatrixPopup();
+      console.log("Confusion matrix popup created after DOM loaded");
+    });
+
+    // Function to create the confusion matrix popup
+    function createConfusionMatrixPopup() {
+      const confusionPopup = document.createElement("div");
+      confusionPopup.id = "confusionPopup";
+      confusionPopup.classList.add("confusion-popup");
+      confusionPopup.style.display = "none";
+      confusionPopup.innerHTML = `
+        <div class="confusion-content">
+          <span class="close" onclick="closeConfusionPopup()">&times;</span>
+          <h2>Confusion Matrix</h2>
+          <table id="confusionTable">
+            <tr>
+              <td>Actual YES - Predicted YES</td>
+              <td id="actualYesPredictedYes">0</td>
+            </tr>
+            <tr>
+              <td>Actual YES - Predicted NO</td>
+              <td id="actualYesPredictedNo">0</td>
+            </tr>
+            <tr>
+              <td>Actual NO - Predicted YES</td>
+              <td id="actualNoPredictedYes">0</td>
+            </tr>
+            <tr>
+              <td>Actual NO - Predicted NO</td>
+              <td id="actualNoPredictedNo">0</td>
+            </tr>
+          </table>
+
+          <h2>Confusion Matrix with bounds</h2>
+          <table id="confusionBoundsTable">
+            <tr>
+              <td>ActualYes-PredictedYES-BoundsMatch</td>
+              <td id="boundyes">0</td>
+            </tr>
+            <tr>
+              <td>ActualYes-PredictedYES-NoBoundsMatch</td>
+              <td id="boundno">0</td>
+            </tr>
+            <tr>
+              <td>ActualYes-PredictedNO-NoBoundsMatch</td>
+              <td id="actualYesPredictedNoNoBoundsMatch">0</td>
+            </tr>
+            <tr>
+              <td>ActualNo-PredictedYES-NoBoundsMatch</td>
+              <td id="actualyesbound">0</td>
+            </tr>
+            <tr>
+              <td>ActualNO-PredictedNo-NoBoundsMatch</td>
+              <td id="actualnobound">0</td>
+            </tr>
+          </table>
+        </div>
+      `;
+      document.body.appendChild(confusionPopup);
+
+      const confusionButton = document.createElement("button");
+      confusionButton.textContent = "view Confusion Matrix";
+      confusionButton.classList.add("confusion-button");
+      confusionButton.addEventListener("click", function () {
+        confusionPopup.style.display = "block";
+        confusionPopup.style.top = `${(window.innerHeight - confusionPopup.offsetHeight) / 2}px`;
+        confusionPopup.style.left = `${(window.innerWidth - confusionPopup.offsetWidth) / 2}px`;
+        document.body.style.overflow = "hidden";
+      });
+      document.body.appendChild(confusionButton);
+    }
+
+    function closeConfusionPopup() {
+      const confusionPopup = document.getElementById("confusionPopup");
+      if (confusionPopup) {
+        confusionPopup.style.display = "none";
+        document.body.style.overflow = "auto"; // Enable scrolling on the main page after closing popup
+      }
+    }
+
+    function processExcel() {
+      const fileInput = document.getElementById('excelFile');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert("Please upload an Excel file.");
+        return;
+      }
+
+      // Reset all counters and UI state
+      resetAll();
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        excelData = XLSX.utils.sheet_to_json(worksheet);
+
+        const tableBody = document.querySelector("#dataTable tbody");
+        tableBody.innerHTML = "";
+
+        excelData.forEach((row) => {
+          const tr = document.createElement("tr");
+
+          // Handle case-insensitive column names
+          const actualValueKey = Object.keys(row).find(key => key.toLowerCase().includes("actual value")) || "";
+
+          tr.innerHTML = `
+            <td>${row["App Name"] || ""}</td>
+            <td>${row[actualValueKey] || ""}</td>
+            <td>${row["Screenshot Path"] ? `<img src="${row["Screenshot Path"]}" width="50">` : "No Screenshot"}</td>
+            <td>${row["Bound Value"] || ""}</td>
+            <td>${row["Element ID"] || "No Element"}</td>
+            <td>${row["JSON"] ? row["JSON"].substring(0, 15) + "..." : "No JSON"}</td>
+            <td>${row["XML Name"] || "No XML"}</td>
+            <td><button class="play-button" onclick="playAction(${excelData.indexOf(row)}, this)">▶ Play</button></td>
+            <td class="request-body-cell"><pre></pre></td>
+            <td class="response-cell"><pre></pre></td>
+            <td class="status-cell"></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function runAllRequests() {
+      // Check if data is loaded
+      if (!excelData || excelData.length === 0) {
+        alert("Please upload and process an Excel file first.");
+        return;
+      }
+      
+      // Check if already processing
+      if (isProcessingAll) {
+        alert("Already processing all requests. Please wait...");
+        return;
+      }
+      
+      // Reset confusion matrix counters before batch processing
+      resetConfusionMatrixCounters();
+      
+      // Set processing flag
+      isProcessingAll = true;
+      
+      // Disable the Run All button during processing
+      const runAllButton = document.getElementById('runAllButton');
+      const originalButtonText = runAllButton.textContent;
+      runAllButton.textContent = "Processing...";
+      runAllButton.disabled = true;
+      
+      // Show progress bar
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+      progressText.textContent = '0%';
+      
+      // Disable all individual play buttons
+      const playButtons = document.querySelectorAll('.play-button');
+      playButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      });
+      
+      try {
+        // Get all play buttons
+        const totalRequests = playButtons.length;
+        
+        // Process each row sequentially
+        for (let i = 0; i < totalRequests; i++) {
+          const button = playButtons[i];
+          
+          // Update progress indicators
+          const progress = Math.round(((i) / totalRequests) * 100);
+          progressBar.style.width = `${progress}%`;
+          progressText.textContent = `Processing ${i+1}/${totalRequests} (${progress}%)`;
+          runAllButton.textContent = `Processing ${i+1}/${totalRequests}`;
+          
+          // Call playAction for this row
+          await playAction(i, button);
+          
+          // Small delay between requests to avoid overwhelming the server
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // Update progress to 100% when complete
+        progressBar.style.width = '100%';
+        progressText.textContent = `Complete! Processed ${totalRequests}/${totalRequests} (100%)`;
+        
+        // Automatically generate and download the report after processing
+        generateReport();
+        
+        alert(`All ${totalRequests} requests have been processed successfully!`);
+      } catch (error) {
+        console.error("Error processing all requests:", error);
+        alert("An error occurred while processing all requests. Please check the console for details.");
+      } finally {
+        // Reset processing flag and button
+        isProcessingAll = false;
+        runAllButton.textContent = originalButtonText;
+        runAllButton.disabled = false;
+        
+        // Re-enable all play buttons
+        playButtons.forEach(btn => {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+        });
+        
+        // Hide progress bar after a short delay
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    async function playAction(index, button) {
+      const rowData = excelData[index];
+      const requestBody = {
+        xml_url: rowData["XML Name"] || "",
+        image_url: rowData["Screenshot Path"] || ""
+      };
+     
+      // Get the row element
+      const row = button.closest('tr');
+      
+      // Add processing class to indicate this row is being processed
+      row.classList.add('processing');
+      
+      const requestBodyCell = button.parentElement.nextElementSibling.firstElementChild;
+      requestBodyCell.textContent = JSON.stringify(requestBody, null, 2);
+     
+      try {
+        const response = await fetch("http://34.235.14.70:8004/invoke", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody)
+        });
+     
+        const data = await response.json();
+        console.log("API Response:", data);
+     
+        const responseCell = requestBodyCell.parentElement.nextElementSibling.firstElementChild;
+        responseCell.textContent = JSON.stringify(data, null, 2);
+     
+        // Extract bounds for comparison
+        const boundFromExcel = String(rowData["Bound Value"] || "").trim().toLowerCase();
+        const boundFromAPI = String(data?.agent_response?.primary_method?.element_metadata?.bounds || "").trim().toLowerCase();
+     
+        // Update Status Cell
+        const statusCell = responseCell.parentElement.nextElementSibling;
+        const isPass = boundFromExcel === boundFromAPI && boundFromExcel !== "";
+        statusCell.innerHTML = isPass ? '<span class="pass-status">Pass</span>' : '<span class="fail-status">Fail</span>';
+        
+        // Remove processing class and add appropriate result class
+        row.classList.remove('processing');
+        row.classList.add(isPass ? 'processed-pass' : 'processed-fail');
+     
+        // Add this request to processed set
+        processedRequests.add(index);
+        
+        // Enable generate report button if we have any processed requests
+        document.getElementById('generateReportButton').disabled = false;
+     
+        // Update Status Summary AFTER DOM Update
+        setTimeout(updateStatusSummary, 100);
+     
+        // Update True Popups Count
+        updateTruePopupCounter(data);
+     
+        // Call updateConfusionMatrix function
+        updateConfusionMatrix(rowData, data);
+        updateConfusionMatrixbounds(rowData, data);
+     
+      } catch (error) {
+        console.error("Error invoking API:", error);
+        
+        // Remove processing class and add fail class on error
+        row.classList.remove('processing');
+        row.classList.add('processed-fail');
+      }
+    }
+
+    // **Fix for True Popups Counter**
+    function updateTruePopupCounter(data) {
+      let truePopupCounterElement = document.getElementById("truePopupCounter");
+      let currentCount = parseInt(truePopupCounterElement.textContent, 10) || 0;
+
+      // Increment only if popup_detection is true
+      if (data?.agent_response?.popup_detection === true) {
+        currentCount++;
+      }
+
+      truePopupCounterElement.textContent = currentCount;
+    }
+
+    // **Fix for Status Summary Counts**
+    function updateStatusSummary() {
+      let pass = 0, fail = 0;
+
+      document.querySelectorAll('.status-cell').forEach(cell => {
+        if (cell.textContent.includes('Pass')) {
+          pass++;
+        } else if (cell.textContent.includes('Fail')) {
+          fail++;
+        }
+      });
+
+      document.getElementById("passCount").textContent = pass;
+      document.getElementById("failCount").textContent = fail;
+    }
+
+    // Reset confusion matrix counters when processing Excel
+    function resetConfusionMatrixCounters() {
+      const counters = [
+        "actualYesPredictedYes", "actualYesPredictedNo", 
+        "actualNoPredictedYes", "actualNoPredictedNo",
+        "boundyes", "boundno", 
+        "actualYesPredictedNoBoundsMatch", "actualYesPredictedNoNoBoundsMatch",
+        "actualyesbound", "actualnobound"
+      ];
+      
+      counters.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = "0";
+        } else {
+          console.error(`Counter element with ID ${id} not found!`);
+        }
+      });
+    }
+
+    // Helper function to safely get and update a counter element
+    function safelyUpdateCounter(id, value) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+        return true;
+      } else {
+        console.error(`Counter element with ID ${id} not found!`);
+        return false;
+      }
+    }
+
+    // Helper function to safely increment a counter element
+    function safelyIncrementCounter(id) {
+      const element = document.getElementById(id);
+      if (element) {
+        const currentValue = parseInt(element.textContent) || 0;
+        element.textContent = currentValue + 1;
+        return true;
+      } else {
+        console.error(`Counter element with ID ${id} not found!`);
+        return false;
+      }
+    }
+
+    // Call updateConfusionMatrix function
+    function updateConfusionMatrix(rowData, apiResponse) {
+      console.log("updateConfusionMatrix called");
+      
+      // Fix case sensitivity issue by finding the actual value key
+      const actualValueKey = Object.keys(rowData).find(key => key.toLowerCase().includes("actual value")) || "";
+      const actualValue = (rowData[actualValueKey] || "").trim().toLowerCase();
+      const predictedValue = apiResponse?.agent_response?.popup_detection == true ? "yes" : "no";
+
+      console.log("Actual Value Key:", actualValueKey);
+      console.log("Actual Value:", actualValue);
+      console.log("Predicted Value:", predictedValue);
+
+      if (actualValue == "yes" && predictedValue == "yes") {
+        safelyIncrementCounter("actualYesPredictedYes");
+      } else if (actualValue == "yes" && predictedValue == "no") {
+        safelyIncrementCounter("actualYesPredictedNo");
+      } else if (actualValue == "no" && predictedValue == "yes") {
+        safelyIncrementCounter("actualNoPredictedYes");
+      } else if (actualValue == "no" && predictedValue == "no") {
+        safelyIncrementCounter("actualNoPredictedNo");
+      }
+
+      // Log current values
+      console.log("Updated Confusion Matrix Values:");
+      console.log("Actual YES - Predicted YES:", document.getElementById("actualYesPredictedYes")?.textContent || "Element not found");
+      console.log("Actual YES - Predicted NO:", document.getElementById("actualYesPredictedNo")?.textContent || "Element not found");
+      console.log("Actual NO - Predicted YES:", document.getElementById("actualNoPredictedYes")?.textContent || "Element not found");
+      console.log("Actual NO - Predicted NO:", document.getElementById("actualNoPredictedNo")?.textContent || "Element not found");
+
+      // Update the code to check if the text includes "Actual YES - Predicted YES" and change background color
+      document.querySelectorAll("td").forEach(function (td) {
+        if (td.textContent.trim().includes("Actual YES - Predicted YES")) {
+          td.style.backgroundColor = "green";
+        }
+      });
+    }
+
+    // Call updateConfusionMatrixbounds function
+    function updateConfusionMatrixbounds(rowData, apiResponse) {
+      console.log("updateConfusionMatrixbounds called");
+      
+      const actualValueKey = Object.keys(rowData).find(key => key.toLowerCase().includes("actual value")) || "";
+      const actualValue = (rowData[actualValueKey] || "").trim().toLowerCase();
+      const predictedValue = apiResponse?.agent_response?.popup_detection == true ? "yes" : "no";
+      const boundFromExcel = String(rowData["Bound Value"] || "").trim().toLowerCase();
+      const boundFromAPI = String(apiResponse?.agent_response?.primary_method?.element_metadata?.bounds || "").trim().toLowerCase();
+      const isPass = boundFromExcel === boundFromAPI && boundFromExcel !== "";
+
+      console.log("Actual Value Key:", actualValueKey);
+      console.log("Actual Value:", actualValue);
+      console.log("Predicted Value:", predictedValue);
+      console.log("Bound From Excel:", boundFromExcel);
+      console.log("Bound From API:", boundFromAPI);
+      console.log("Is Pass:", isPass);
+
+      // Case 1: Actual YES - Predicted YES - Bounds Match
+      if (actualValue === "yes" && predictedValue === "yes" && isPass) {
+        safelyIncrementCounter("boundyes");
+      }
+      // Case 2: Actual YES - Predicted YES - No Bounds Match
+      else if (actualValue === "yes" && predictedValue === "yes" && !isPass) {
+        safelyIncrementCounter("boundno");
+      }
+      // Case 3: Actual YES - Predicted NO - Bounds Match
+      else if (actualValue === "yes" && predictedValue === "no" && isPass) {
+        safelyIncrementCounter("actualYesPredictedNoBoundsMatch");
+      }
+      // Case 4: Actual YES - Predicted NO - No Bounds Match
+      else if (actualValue === "yes" && predictedValue === "no" && !isPass) {
+        safelyIncrementCounter("actualYesPredictedNoNoBoundsMatch");
+      }
+      // Case 5: Actual NO - Predicted YES - No Bounds Match
+      else if (actualValue === "no" && predictedValue === "yes") {
+        safelyIncrementCounter("actualyesbound");
+      }
+      // Case 6: Actual NO - Predicted NO - No Bounds Match
+      else if (actualValue === "no" && predictedValue === "no") {
+        safelyIncrementCounter("actualnobound");
+      }
+
+      // Log current values
+      console.log("Updated Confusion Matrix Bounds Values:");
+      console.log("ActualYes-PredictedYES-BoundsMatch:", document.getElementById("boundyes")?.textContent || "Element not found");
+      console.log("ActualYes-PredictedYES-NoBoundsMatch:", document.getElementById("boundno")?.textContent || "Element not found");
+      console.log("ActualYes-PredictedNO-NoBoundsMatch:", document.getElementById("actualYesPredictedNoNoBoundsMatch")?.textContent || "Element not found");
+      console.log("ActualNo-PredictedYES-NoBoundsMatch:", document.getElementById("actualyesbound")?.textContent || "Element not found");
+      console.log("ActualNO-PredictedNo-NoBoundsMatch:", document.getElementById("actualnobound")?.textContent || "Element not found");
+
+      // Update the code to check if the text includes "Actual YES - Predicted YES" and change background color
+      document.querySelectorAll("td").forEach(function (td) {
+        if (td.textContent.trim().includes("Actual YES - Predicted YES")) {
+          td.style.backgroundColor = "green";
+        }
+      });
+    }
+
+    // Function to generate rows for detailed results
+    function generateDetailedResultsRows() {
+      return excelData
+        .filter((_, index) => processedRequests.has(index))
+        .map((row, index) => {
+          const actualValueKey = Object.keys(row).find(key => key.toLowerCase().includes("actual value")) || "";
+          const originalIndex = Array.from(processedRequests)[index];
+          const responseCell = document.querySelector(`#dataTable tbody tr:nth-child(${originalIndex + 1}) .response-cell pre`);
+          const statusCell = document.querySelector(`#dataTable tbody tr:nth-child(${originalIndex + 1}) .status-cell`);
+          
+          // Get the status text and class
+          let statusHtml = statusCell ? statusCell.innerHTML : "";
+          // Convert the status span to use the appropriate class
+          statusHtml = statusHtml.replace('class="pass-status"', 'class="pass-status"').replace('class="fail-status"', 'class="fail-status"');
+          
+          return `
+            <tr>
+              <td>${row["App Name"] || ""}</td>
+              <td>${row["Screenshot Path"] || ""}</td>
+              <td>${row[actualValueKey] || ""}</td>
+              <td>${row["Bound Value"] || ""}</td>
+              <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
+                ${responseCell ? responseCell.textContent : ""}
+              </td>
+              <td>${statusHtml}</td>
+            </tr>
+          `;
+        }).join('');
+    }
+
+    // Function to generate and download the report
+    function generateReport() {
+      const processedCount = processedRequests.size;
+      
+      // Generate the report content
+      const reportContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Processing Report</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                max-width: 1200px;
+                margin: 20px auto;
+                padding: 20px;
+                background: #fff;
+                color: #333;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                background: #fff;
+              }
+              th, td {
+                border: 1px solid #ddd;
+                padding: 12px;
+                text-align: left;
+                color: #333;
+              }
+              th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+              }
+              h2, h3 {
+                color: #333;
+                margin-top: 20px;
+              }
+              .matrix-container {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 30px;
+                gap: 20px;
+              }
+              .matrix-section {
+                flex: 1;
+              }
+              .pass-status {
+                color: #28a745;
+                font-weight: bold;
+              }
+              .fail-status {
+                color: #dc3545;
+                font-weight: bold;
+              }
+              pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                background: #f8f9fa;
+                padding: 8px;
+                border-radius: 4px;
+                color: #333;
+                font-size: 12px;
+                max-height: 150px;
+                overflow-y: auto;
+              }
+              @media print {
+                body {
+                  padding: 0;
+                  margin: 20px;
+                }
+                table {
+                  page-break-inside: avoid;
+                }
+                pre {
+                  white-space: pre-wrap;
+                  word-wrap: break-word;
+                  max-height: none;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <h2>Processing Report (${processedCount} Request${processedCount !== 1 ? 's' : ''} Processed)</h2>
+            
+            <div class="matrix-container">
+              <div class="matrix-section">
+                <h3>Confusion Matrix</h3>
+                <table>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Count</th>
+                  </tr>
+                  <tr>
+                    <td>Actual YES - Predicted YES</td>
+                    <td>${document.getElementById('actualYesPredictedYes') ? document.getElementById('actualYesPredictedYes').textContent : 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual YES - Predicted NO</td>
+                    <td>${document.getElementById('actualYesPredictedNo') ? document.getElementById('actualYesPredictedNo').textContent : 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual NO - Predicted YES</td>
+                    <td>${document.getElementById('actualNoPredictedYes') ? document.getElementById('actualNoPredictedYes').textContent : 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual NO - Predicted NO</td>
+                    <td>${document.getElementById('actualNoPredictedNo') ? document.getElementById('actualNoPredictedNo').textContent : 0}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div class="matrix-section">
+                <h3>Confusion Matrix with Bounds</h3>
+                <table>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Count</th>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-BoundsMatch</td>
+                    <td>${document.getElementById('boundyes') ? document.getElementById('boundyes').textContent : 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-NoBoundsMatch</td>
+                    <td>${document.getElementById('boundno') ? document.getElementById('boundno').textContent : 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedNO-NoBoundsMatch</td>
+                    <td>${document.getElementById('actualYesPredictedNoNoBoundsMatch') ? document.getElementById('actualYesPredictedNoNoBoundsMatch').textContent : 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualNo-PredictedYES-NoBoundsMatch</td>
+                    <td>${document.getElementById('actualyesbound') ? document.getElementById('actualyesbound').textContent : 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualNO-PredictedNo-NoBoundsMatch</td>
+                    <td>${document.getElementById('actualnobound') ? document.getElementById('actualnobound').textContent : 0}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <h3>Detailed Results</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>App</th>
+                  <th>Screenshot URL</th>
+                  <th>Actual Value</th>
+                  <th>Expected Bounds</th>
+                  <th>Response</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${generateDetailedResultsRows()}
+              </tbody>
+            </table>
+            
+            <div style="text-align: right; margin-top: 20px; color: #666;">
+              <small>Generated on: ${new Date().toLocaleString()}</small>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Create and download the file
+      const blob = new Blob([reportContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `processing-report-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Reset all counters and UI state
+    function resetAll() {
+      // Reset counters
+      resetConfusionMatrixCounters();
+      document.getElementById('passCount').textContent = '0';
+      document.getElementById('failCount').textContent = '0';
+      document.getElementById('truePopupCounter').textContent = '0';
+      
+      // Clear processed requests tracking
+      processedRequests.clear();
+      
+      // Disable generate report button
+      document.getElementById('generateReportButton').disabled = true;
+    }
+
+  </script>
+</body>
+
+</html>
