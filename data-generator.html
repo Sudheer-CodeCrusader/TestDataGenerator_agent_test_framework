@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0a0a;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 1900px;
+      margin: auto;
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .upload-section {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .upload-box {
+      border: 2px dashed #6936f5;
+      padding: 15px;
+      width: 250px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+    }
+
+    .button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .button.primary {
+      background: #6936f5;
+    }
+
+    .button.success {
+      background: #34c759;
+    }
+
+    .button.secondary {
+      background: #555;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #222;
+      table-layout: auto;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      min-width: 120px;
+      border: 1px solid white;
+      padding: 8px;
+      text-align: left;
+      font-size: 12px;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+
+    th {
+      background: #333;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    tr:nth-child(even) {
+      background: #2a2a2a;
+    }
+
+    .data-generator-row {
+      background-color: #2a2a2a;
+    }
+    
+    .data-generator-row td {
+      padding: 12px;
+    }
+    
+    .bounds-match {
+      color: #28a745;
+      font-weight: bold;
+    }
+    
+    .bounds-differ {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #6936f5;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .status-indicator {
+      margin-top: 20px;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    .stat-box {
+      background-color: #222;
+      border-radius: 8px;
+      padding: 10px 20px;
+      min-width: 150px;
+    }
+
+    .stat-title {
+      font-size: 14px;
+      color: #999;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .match-value {
+      color: #28a745;
+    }
+
+    .differ-value {
+      color: #dc3545;
+    }
+    
+    .popup-value {
+      color: #6936f5;
+    }
+    
+    .data-generation-value {
+      color: #6936f5;
+    }
+    
+    .summary-box {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      background-color: #1a1a1a;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid #333;
+      z-index: 10;
+    }
+
+    .summary-item {
+      margin-bottom: 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .summary-label {
+      color: #999;
+    }
+
+    .summary-value {
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 4px;
+      min-width: 30px;
+      text-align: center;
+    }
+
+    .pass-value {
+      background-color: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+
+    .fail-value {
+      background-color: rgba(220, 53, 69, 0.2);
+      color: #dc3545;
+    }
+
+    .popup-value {
+      background-color: rgba(105, 54, 245, 0.2);
+      color: #6936f5;
+    }
+
+    .response-cell {
+      max-width: 250px;
+      overflow-x: hidden;
+    }
+    
+    .response-preview {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      background: #1e1e1e;
+      padding: 5px;
+      border-radius: 5px;
+      max-height: 100px;
+      overflow-y: auto;
+      font-size: 11px;
+      color: #e6e6e6;
+      text-align: left;
+    }
+    
+    .toggle-response {
+      cursor: pointer;
+      color: #6936f5;
+      font-size: 12px;
+      text-decoration: underline;
+      margin-top: 5px;
+      display: block;
+    }
+
+    .screenshot-img {
+      width: 80px;
+      height: auto;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      object-fit: contain;
+      border: 1px solid #333;
+    }
+
+    .screenshot-img:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 8px rgba(105, 54, 245, 0.5);
+    }
+
+    .image-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .image-modal-content {
+      max-width: 90%;
+      max-height: 90%;
+      margin: auto;
+      border: 2px solid #6936f5;
+      border-radius: 8px;
+      background-color: #000;
+      padding: 5px;
+    }
+
+    .image-modal-close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 30px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .image-modal-close:hover {
+      color: #6936f5;
+    }
+
+    .screenshot-cell {
+      text-align: center;
+      vertical-align: middle;
+      min-width: 100px;
+      padding: 10px;
+    }
+
+    .play-button {
+      background-color: #6936f5;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .play-button:hover {
+      background-color: #5428c7;
+      transform: scale(1.1);
+    }
+
+    .play-button:disabled {
+      background-color: #444;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .play-button-cell {
+      text-align: center;
+    }
+
+    .play-icon {
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 7px 0 7px 12px;
+      border-color: transparent transparent transparent white;
+      display: inline-block;
+      margin-left: 3px;
+    }
+
+    .notification-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #1a1a1a;
+      border: 1px solid #6936f5;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      z-index: 1001;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      animation: fadeIn 0.3s;
+    }
+    
+    .notification-popup h3 {
+      margin-top: 0;
+      color: white;
+    }
+    
+    .notification-popup p {
+      margin-bottom: 20px;
+      color: #ddd;
+    }
+    
+    .notification-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .notification-button {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    
+    .notification-button.confirm {
+      background-color: #6936f5;
+      color: white;
+    }
+    
+    .notification-button.cancel {
+      background-color: #444;
+      color: white;
+    }
+    
+    .notification-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .notification-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .table-container {
+      margin-top: 20px;
+      width: 100%;
+      max-height: 500px;
+      overflow-x: auto;
+      overflow-y: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .response-cell {
+      max-width: 250px;
+      overflow-x: hidden;
+    }
+    
+    .excel-bounds-cell, .response-bounds-cell {
+      min-width: 180px;
+      max-width: 300px;
+    }
+    
+    .request-body-cell {
+      min-width: 150px;
+      max-width: 200px;
+    }
+    
+    .status-cell {
+      min-width: 120px;
+      text-align: left;
+      padding: 8px;
+    }
+    
+    .status-cell div {
+      margin: 2px 0;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    
+    .field-type-cell {
+      min-width: 150px;
+      max-width: 200px;
+    }
+    
+    pre {
+      max-width: 100%;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Add a back to home button */
+    .back-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 8px 16px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .back-button:hover {
+      background-color: #444;
+      transform: translateY(-2px);
+    }
+    
+    .back-arrow {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-left: 2px solid white;
+      border-bottom: 2px solid white;
+      transform: rotate(45deg);
+    }
+    
+    /* Confusion Matrix Popup Styles */
+    .confusion-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .confusion-content {
+      background-color: #1a1a1a;
+      padding: 25px;
+      border-radius: 10px;
+      width: 80%;
+      max-width: 800px;
+      margin: 50px auto;
+      position: relative;
+      border: 1px solid #444;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    }
+    
+    .close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #999;
+      transition: color 0.2s;
+    }
+    
+    .close:hover {
+      color: white;
+    }
+    
+    #confusionPopupTable, #confusionPopupBoundsTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      background: #222;
+    }
+    
+    #confusionPopupTable td, #confusionPopupBoundsTable td {
+      padding: 10px 15px;
+      border: 1px solid #444;
+      text-align: left;
+    }
+    
+    #confusionPopupTable tr:first-child td, #confusionPopupBoundsTable tr:first-child td {
+      background-color: #333;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <button class="back-button" onclick="window.location.href='selection.html'">
+      <span class="back-arrow"></span> Back
+    </button>
+    
+    <h2>Data Generator</h2>
+    <p>Upload an Excel sheet to generate and compare bounds data</p>
+    
+    <div class="summary-box">
+      <div class="summary-item">
+        <span class="summary-label">Pass:</span>
+        <span class="summary-value pass-value" id="passCount">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Fail:</span>
+        <span class="summary-value fail-value" id="failCount">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Data Gen True:</span>
+        <span class="summary-value popup-value" id="dataGenerationCount">0</span>
+      </div>
+    </div>
+    
+    <div class="upload-section">
+      <label class="upload-box">
+        <input type="file" id="excelFile" accept=".xlsx, .xls" hidden onchange="processExcel()">
+        Upload Excel Sheet
+      </label>
+    </div>
+    
+    <div class="button-container">
+      <button class="button success" id="generateButton" onclick="runDataGenerator()" disabled>Run All</button>
+      <button class="button secondary" id="exportButton" onclick="exportDataGeneratorResults()" disabled>Export Results</button>
+      <button class="button primary" id="viewMatrixButton" onclick="showConfusionPopup()">View Confusion Matrix</button>
+    </div>
+
+    <div class="table-container">
+      <table id="previewTable" style="display: none; width: 100%;">
+        <thead>
+          <tr>
+            <th>App</th>
+            <th>Actual Value</th>
+            <th>Screenshot</th>
+            <th>Bound</th>
+            <th>FieldType</th>
+            <th>Response Bounds</th>
+            <th>Element</th>
+            <th>JSON</th>
+            <th>XML Name</th>
+            <th>Action</th>
+            <th>Request Body</th>
+            <th>Response</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="status-indicator" style="display: none" id="statsContainer">
+      <div class="stat-box">
+        <div class="stat-title">Total Processed</div>
+        <div class="stat-value" id="totalProcessed">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">Matches</div>
+        <div class="stat-value match-value" id="matchCount">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">Differences</div>
+        <div class="stat-value differ-value" id="differCount">0</div>
+      </div>
+    </div>
+
+    <div id="progressContainer" style="display: none; width: 100%; margin-top: 15px; text-align: center;">
+      <div style="width: 100%; background-color: #333; border-radius: 5px; overflow: hidden;">
+        <div id="progressBar" style="height: 20px; width: 0%; background-color: #34c759; transition: width 0.3s;"></div>
+      </div>
+      <div id="progressText" style="margin-top: 5px; font-size: 14px; color: white;">0%</div>
+    </div>
+
+    <!-- Hidden Confusion Matrix Container (for data storage only) -->
+    <div id="confusionMatrixContainer" style="display: none; position: absolute; visibility: hidden;">
+      <table id="confusionTable">
+        <tr>
+          <td>Actual YES - Predicted YES</td>
+          <td id="actualYesPredictedYes">0</td>
+        </tr>
+        <tr>
+          <td>Actual YES - Predicted NO</td>
+          <td id="actualYesPredictedNo">0</td>
+        </tr>
+        <tr>
+          <td>Actual NO - Predicted YES</td>
+          <td id="actualNoPredictedYes">0</td>
+        </tr>
+        <tr>
+          <td>Actual NO - Predicted NO</td>
+          <td id="actualNoPredictedNo">0</td>
+        </tr>
+      </table>
+
+      <table id="confusionBoundsTable">
+        <tr>
+          <th>Metric</th>
+          <th>Count</th>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-BoundsMatch-FieldTypeMatch</td>
+          <td id="boundyesfieldtypeyes">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-BoundsMatch-NoFieldTypeMatch</td>
+          <td id="boundyesfieldtypeno">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-NoBoundsMatch-FieldTypeMatch</td>
+          <td id="boundnofieldtypeyes">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="boundnofieldtypeno">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedNO-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="actualYesPredictedNoNoBoundsMatch">0</td>
+        </tr>
+        <tr>
+          <td>ActualNo-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="actualyesbound">0</td>
+        </tr>
+        <tr>
+          <td>ActualNO-PredictedNo-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="actualnobound">0</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="notification-overlay" id="notificationOverlay"></div>
+  <div class="notification-popup" id="notificationPopup">
+    <h3>Confirm Navigation</h3>
+    <p>You have unsaved data that will be lost if you leave this page. Are you sure you want to continue?</p>
+    <div class="notification-buttons">
+      <button class="notification-button cancel" id="cancelNavigation">Cancel</button>
+      <button class="notification-button confirm" id="confirmNavigation">Leave Page</button>
+    </div>
+  </div>
+
+  <!-- Add Confusion Matrix Popup -->
+  <div class="confusion-popup" id="confusionPopup" style="display: none;">
+    <div class="confusion-content">
+      <span class="close" onclick="closeConfusionPopup()">&times;</span>
+      <h2>Confusion Matrix</h2>
+      <table id="confusionPopupTable">
+        <tr>
+          <th>Metric</th>
+          <th>Count</th>
+        </tr>
+        <tr>
+          <td>Actual YES - Predicted YES</td>
+          <td id="popupActualYesPredictedYes">0</td>
+        </tr>
+        <tr>
+          <td>Actual YES - Predicted NO</td>
+          <td id="popupActualYesPredictedNo">0</td>
+        </tr>
+        <tr>
+          <td>Actual NO - Predicted YES</td>
+          <td id="popupActualNoPredictedYes">0</td>
+        </tr>
+        <tr>
+          <td>Actual NO - Predicted NO</td>
+          <td id="popupActualNoPredictedNo">0</td>
+        </tr>
+      </table>
+
+      <h2>Confusion Matrix with bounds</h2>
+      <table id="confusionPopupBoundsTable">
+        <tr>
+          <th>Metric</th>
+          <th>Count</th>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-BoundsMatch-FieldTypeMatch</td>
+          <td id="popupBoundyesfieldtypeyes">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-BoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupBoundyesfieldtypeno">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-NoBoundsMatch-FieldTypeMatch</td>
+          <td id="popupBoundnofieldtypeyes">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupBoundnofieldtypeno">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedNO-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupActualYesPredictedNoNoBoundsMatch">0</td>
+        </tr>
+        <tr>
+          <td>ActualNo-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupActualyesbound">0</td>
+        </tr>
+        <tr>
+          <td>ActualNO-PredictedNo-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupActualnobound">0</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let excelData = [];
+    let dataGeneratorResults = [];
+    let isProcessing = false;
+    let rowsProcessed = new Set();
+    let hasUnsavedData = false;
+    let isLeavingIntentionally = false;
+    let isPaused = false;
+    let processingQueue = [];
+    let currentProcessingIndex = 0;
+
+    // Initialize arrays to track all matches
+    let allTypeMatches = [];
+
+    // Functions for confusion matrix popup
+    function showConfusionPopup() {
+      // Update popup values from the main confusion matrix
+      updatePopupFromMainMatrix();
+      
+      const confusionPopup = document.getElementById("confusionPopup");
+      confusionPopup.style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+    
+    function closeConfusionPopup() {
+      const confusionPopup = document.getElementById("confusionPopup");
+      confusionPopup.style.display = "none";
+      document.body.style.overflow = "auto";
+    }
+    
+    function updatePopupFromMainMatrix() {
+      // Copy values from main matrix to popup
+      document.getElementById("popupActualYesPredictedYes").textContent = 
+        document.getElementById("actualYesPredictedYes").textContent;
+      document.getElementById("popupActualYesPredictedNo").textContent = 
+        document.getElementById("actualYesPredictedNo").textContent;
+      document.getElementById("popupActualNoPredictedYes").textContent = 
+        document.getElementById("actualNoPredictedYes").textContent;
+      document.getElementById("popupActualNoPredictedNo").textContent = 
+        document.getElementById("actualNoPredictedNo").textContent;
+      
+      // Copy values for detailed confusion matrix with bounds - only the specified scenarios
+      document.getElementById("popupBoundyesfieldtypeyes").textContent = 
+        document.getElementById("boundyesfieldtypeyes").textContent;
+      document.getElementById("popupBoundyesfieldtypeno").textContent = 
+        document.getElementById("boundyesfieldtypeno").textContent;
+      document.getElementById("popupBoundnofieldtypeyes").textContent = 
+        document.getElementById("boundnofieldtypeyes").textContent;
+      document.getElementById("popupBoundnofieldtypeno").textContent = 
+        document.getElementById("boundnofieldtypeno").textContent;
+      document.getElementById("popupActualYesPredictedNoNoBoundsMatch").textContent = 
+        document.getElementById("actualYesPredictedNoNoBoundsMatch").textContent;
+      document.getElementById("popupActualyesbound").textContent = 
+        document.getElementById("actualyesbound").textContent;
+      document.getElementById("popupActualnobound").textContent = 
+        document.getElementById("actualnobound").textContent;
+    }
+
+    // Helper function to safely get and update a counter element
+    function safelyUpdateCounter(id, value) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+        return true;
+      } else {
+        console.error(`Counter element with ID ${id} not found!`);
+        return false;
+      }
+    }
+
+    // Helper function to safely increment a counter element
+    function safelyIncrementCounter(id) {
+      const element = document.getElementById(id);
+      if (element) {
+        const currentValue = parseInt(element.textContent) || 0;
+        element.textContent = currentValue + 1;
+        return true;
+      } else {
+        console.error(`Counter element with ID ${id} not found!`);
+        return false;
+      }
+    }
+
+    // Function to update confusion matrix
+    function updateConfusionMatrix(rowData, apiResponse) {
+      const actualValueKey = Object.keys(rowData).find(key => key.toLowerCase().includes("actual value")) || "";
+      const actualValue = (rowData[actualValueKey] || "").trim().toLowerCase();
+      
+      // Use data_generation_required instead of popup_detection
+      const predictedValue = apiResponse?.agent_response?.data_generation_required === true ? "yes" : "no";
+      
+      console.log("Confusion Matrix Update:", {
+        actualValue,
+        predictedValue,
+        data_generation_required: apiResponse?.agent_response?.data_generation_required
+      });
+
+      if (actualValue === "yes" && predictedValue === "yes") {
+        safelyIncrementCounter("actualYesPredictedYes");
+      } else if (actualValue === "yes" && predictedValue === "no") {
+        safelyIncrementCounter("actualYesPredictedNo");
+      } else if (actualValue === "no" && predictedValue === "yes") {
+        safelyIncrementCounter("actualNoPredictedYes");
+      } else if (actualValue === "no" && predictedValue === "no") {
+        safelyIncrementCounter("actualNoPredictedNo");
+      }
+    }
+
+    // Function to update confusion matrix with bounds
+    function updateConfusionMatrixBounds(rowData, apiResponse) {
+      const actualValueKey = Object.keys(rowData).find(key => key.toLowerCase().includes("actual value")) || "";
+      const actualValue = (rowData[actualValueKey] || "").trim().toLowerCase();
+      
+      // Use data_generation_required instead of popup_detection
+      const predictedValue = apiResponse?.agent_response?.data_generation_required === true ? "yes" : "no";
+      
+      // Extract bounds information
+      const manualBoundsRaw = String(rowData["Bound Value"] || "").trim();
+      const manualBoundsArray = manualBoundsRaw.split(/\s+/).map(bound => bound.trim().toLowerCase()).filter(Boolean);
+      
+      // Get FieldType from Excel
+      const fieldTypeFromExcel = String(rowData["FieldType"] || "").trim().toLowerCase();
+      
+      // Process bounds and field types using the same logic as in the UI
+      let generatedBoundsArray = [];
+      let allTypeMatches = [];
+      
+      if (apiResponse?.agent_response?.fields && apiResponse.agent_response.fields.length > 0) {
+        generatedBoundsArray = apiResponse.agent_response.fields
+          .map(field => {
+            const type = String(field?.type || "").toLowerCase();
+            return {
+              bounds: String(field?.metadata?.bounds || "").trim().toLowerCase(),
+              type: type
+            };
+          })
+          .filter(item => item.bounds);
+      }
+
+      // Check for exact bounds matching in both directions
+      let directBoundsMatch = true;
+      
+      // First check: All Excel bounds must be present in response
+      for (const manualBound of manualBoundsArray) {
+        const normalizedManual = manualBound.replace(/[\s\[\]]/g, '').toLowerCase();
+        const foundMatch = generatedBoundsArray.some(item => {
+          const normalizedGenerated = item.bounds.replace(/[\s\[\]]/g, '').toLowerCase();
+          return normalizedManual === normalizedGenerated;
+        });
+        if (!foundMatch) {
+          directBoundsMatch = false;
+          console.log(`Excel bound not found in response: ${manualBound}`);
+          break;
+        }
+      }
+
+      // Second check: All response bounds must be present in Excel
+      if (directBoundsMatch) {
+        for (const genItem of generatedBoundsArray) {
+          const normalizedGenerated = genItem.bounds.replace(/[\s\[\]]/g, '').toLowerCase();
+          const foundMatch = manualBoundsArray.some(manualBound => {
+            const normalizedManual = manualBound.replace(/[\s\[\]]/g, '').toLowerCase();
+            return normalizedGenerated === normalizedManual;
+          });
+          if (!foundMatch) {
+            directBoundsMatch = false;
+            console.log(`Response bound not found in Excel: ${genItem.bounds}`);
+            break;
+          }
+        }
+      }
+
+      // Field type matching
+      const excelTypes = fieldTypeFromExcel.split(/[,\s]+/).filter(Boolean).map(t => t.toLowerCase());
+      const responseTypes = generatedBoundsArray.map(item => item.type.toLowerCase());
+
+      // Check if all Excel types are present in response and vice versa
+      let fieldTypeMatch = true;
+      
+      // First check: All Excel types must be present in response
+      for (const excelType of excelTypes) {
+        if (!responseTypes.includes(excelType)) {
+          fieldTypeMatch = false;
+          console.log(`Excel type not found in response: ${excelType}`);
+          break;
+        }
+      }
+
+      // Second check: All response types must be present in Excel
+      if (fieldTypeMatch) {
+        for (const responseType of responseTypes) {
+          if (!excelTypes.includes(responseType)) {
+            fieldTypeMatch = false;
+            console.log(`Response type not found in Excel: ${responseType}`);
+            break;
+          }
+        }
+      }
+
+      console.log("Final comparison results:", {
+        actualValue,
+        predictedValue,
+        directBoundsMatch,
+        fieldTypeMatch,
+        excelTypes,
+        responseTypes,
+        manualBoundsArray,
+        generatedBoundsArray
+      });
+
+      // Case 1: ActualYes-PredictedYES-BoundsMatch-FieldTypeMatch
+      if (actualValue === "yes" && predictedValue === "yes" && directBoundsMatch && fieldTypeMatch) {
+        console.log("Incrementing boundyesfieldtypeyes");
+        safelyIncrementCounter("boundyesfieldtypeyes");
+      }
+      // Case 2: ActualYes-PredictedYES-BoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "yes" && predictedValue === "yes" && directBoundsMatch && !fieldTypeMatch) {
+        console.log("Incrementing boundyesfieldtypeno");
+        safelyIncrementCounter("boundyesfieldtypeno");
+      }
+      // Case 3: ActualYes-PredictedYES-NoBoundsMatch-FieldTypeMatch
+      else if (actualValue === "yes" && predictedValue === "yes" && !directBoundsMatch && fieldTypeMatch) {
+        console.log("Incrementing boundnofieldtypeyes");
+        safelyIncrementCounter("boundnofieldtypeyes");
+      }
+      // Case 4: ActualYes-PredictedYES-NoBoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "yes" && predictedValue === "yes" && !directBoundsMatch && !fieldTypeMatch) {
+        console.log("Incrementing boundnofieldtypeno");
+        safelyIncrementCounter("boundnofieldtypeno");
+      }
+      // Case 5: ActualYes-PredictedNO-NoBoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "yes" && predictedValue === "no") {
+        console.log("Incrementing actualYesPredictedNoNoBoundsMatch");
+        safelyIncrementCounter("actualYesPredictedNoNoBoundsMatch");
+      }
+      // Case 6: ActualNo-PredictedYES-NoBoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "no" && predictedValue === "yes") {
+        console.log("Incrementing actualyesbound");
+        safelyIncrementCounter("actualyesbound");
+      }
+      // Case 7: ActualNO-PredictedNo-NoBoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "no" && predictedValue === "no") {
+        console.log("Incrementing actualnobound");
+        safelyIncrementCounter("actualnobound");
+      }
+    }
+
+    // Function to reset confusion matrix counters
+    function resetConfusionMatrixCounters() {
+      const counters = [
+        // Basic confusion matrix
+        "actualYesPredictedYes", "actualYesPredictedNo", 
+        "actualNoPredictedYes", "actualNoPredictedNo",
+        
+        // Detailed confusion matrix with bounds - only the specified scenarios
+        "boundyesfieldtypeyes", "boundyesfieldtypeno", 
+        "boundnofieldtypeyes", "boundnofieldtypeno",
+        "actualYesPredictedNoNoBoundsMatch",
+        "actualyesbound", "actualnobound"
+      ];
+      
+      counters.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = "0";
+        } else {
+          console.error(`Counter element with ID ${id} not found!`);
+        }
+      });
+    }
+
+    function showNavigationConfirmation(event) {
+      if (hasUnsavedData && !isLeavingIntentionally) {
+        document.getElementById('notificationOverlay').style.display = 'block';
+        document.getElementById('notificationPopup').style.display = 'block';
+        event.preventDefault();
+        event.returnValue = '';
+        return '';
+      }
+    }
+    
+    document.getElementById('cancelNavigation').addEventListener('click', function() {
+      document.getElementById('notificationOverlay').style.display = 'none';
+      document.getElementById('notificationPopup').style.display = 'none';
+    });
+    
+    document.getElementById('confirmNavigation').addEventListener('click', function() {
+      isLeavingIntentionally = true;
+      document.getElementById('notificationOverlay').style.display = 'none';
+      document.getElementById('notificationPopup').style.display = 'none';
+      setTimeout(() => {
+        window.removeEventListener('beforeunload', showNavigationConfirmation);
+        window.location.reload();
+      }, 100);
+    });
+    
+    window.addEventListener('beforeunload', showNavigationConfirmation);
+    
+    document.querySelectorAll('.nav-button').forEach(button => {
+      button.addEventListener('click', function(e) {
+        if (hasUnsavedData && !isLeavingIntentionally) {
+          e.preventDefault();
+          const targetHref = this.getAttribute('onclick');
+          document.getElementById('confirmNavigation').onclick = function() {
+            isLeavingIntentionally = true;
+            if (targetHref) {
+              const match = targetHref.match(/window\.location\.href=['"]([^'"]+)['"]/);
+              if (match && match[1]) {
+                window.location.href = match[1];
+              } else {
+                eval(targetHref);
+              }
+            }
+          };
+          document.getElementById('notificationOverlay').style.display = 'block';
+          document.getElementById('notificationPopup').style.display = 'block';
+        }
+      });
+    });
+
+    function processExcel() {
+      const fileInput = document.getElementById('excelFile');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert("Please upload an Excel file.");
+        return;
+      }
+      
+      if (isProcessing) {
+        alert("Already processing data. Please wait...");
+        return;
+      }
+      
+      isProcessing = true;
+      resetUI();
+      
+      const uploadBox = document.querySelector('.upload-box');
+      const originalText = uploadBox.textContent;
+      uploadBox.innerHTML = `Processing <span class="loading-spinner"></span>`;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        excelData = XLSX.utils.sheet_to_json(worksheet);
+
+        const previewTable = document.getElementById('previewTable');
+        const tableBody = previewTable.querySelector('tbody');
+        tableBody.innerHTML = '';
+
+        excelData.forEach((row, index) => {
+          const tr = document.createElement('tr');
+          const actualValueKey = Object.keys(row).find(key => key.toLowerCase().includes("actual value")) || "";
+          let screenshotHtml = "No Screenshot";
+          if (row["Screenshot Path"]) {
+            screenshotHtml = `
+              <img src="${row["Screenshot Path"]}" 
+                   class="screenshot-img" 
+                   onclick="showImageModal('${row["Screenshot Path"]}')"
+                   onerror="this.onerror=null; this.src=''; this.alt='Error loading image'; this.style.height='30px';"
+                   alt="${row["App Name"] || "Screenshot"}" 
+              />
+            `;
+          }
+          
+          tr.innerHTML = `
+            <td>${row["App Name"] || ""}</td>
+            <td>${row[actualValueKey] || ""}</td>
+            <td class="screenshot-cell">${screenshotHtml}</td>
+            <td class="excel-bounds-cell">${row["Bound Value"] || ""}</td>
+            <td class="field-type-cell">${row["FieldType"] || ""}</td>
+            <td class="response-bounds-cell"></td>
+            <td>${row["Element ID"] || "No Element"}</td>
+            <td>${row["JSON"] ? row["JSON"].substring(0, 15) + "..." : "No JSON"}</td>
+            <td>${row["XML Name"] || "No XML"}</td>
+            <td class="play-button-cell">
+              <button class="play-button" onclick="processIndividualRequest(${index}, this)">
+                <span class="play-icon"></span>
+              </button>
+            </td>
+            <td class="request-body-cell"><pre></pre></td>
+            <td class="response-cell"><pre></pre></td>
+            <td class="status-cell"></td>
+          `;
+          tableBody.appendChild(tr);
+        });
+
+        previewTable.style.display = 'table';
+        document.getElementById('generateButton').disabled = false;
+        uploadBox.innerHTML = `<input type="file" id="excelFile" accept=".xlsx, .xls" hidden onchange="processExcel()">Upload Excel Sheet`;
+        isProcessing = false;
+        hasUnsavedData = excelData.length > 0;
+      };
+      reader.onerror = function() {
+        alert("Error reading the Excel file.");
+        uploadBox.innerHTML = `<input type="file" id="excelFile" accept=".xlsx, .xls" hidden onchange="processExcel()">Upload Excel Sheet`;
+        isProcessing = false;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function resetUI() {
+      const previewTable = document.getElementById('previewTable');
+      const previewTableBody = previewTable.querySelector('tbody');
+      previewTableBody.innerHTML = '';
+      previewTable.style.display = 'none';
+      
+      dataGeneratorResults = [];
+      rowsProcessed = new Set();
+      
+      document.getElementById('generateButton').disabled = true;
+      document.getElementById('exportButton').disabled = true;
+      
+      document.getElementById('totalProcessed').textContent = '0';
+      document.getElementById('matchCount').textContent = '0';
+      document.getElementById('differCount').textContent = '0';
+      document.getElementById('statsContainer').style.display = 'none';
+      
+      document.getElementById('progressContainer').style.display = 'none';
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('progressText').textContent = '0%';
+
+      document.getElementById('passCount').textContent = '0';
+      document.getElementById('failCount').textContent = '0';
+      document.getElementById('dataGenerationCount').textContent = '0';
+      
+      // Reset confusion matrix counters
+      resetConfusionMatrixCounters();
+
+      hasUnsavedData = false;
+    }
+
+    async function processIndividualRequest(rowIndex, button) {
+      if (!excelData || excelData.length === 0 || rowIndex >= excelData.length) {
+        alert("Invalid data or row index");
+        return;
+      }
+
+      if (isProcessing) {
+        alert("Already processing data. Please wait...");
+        return;
+      }
+
+      isProcessing = true;
+      const row = button.closest('tr');
+      document.getElementById('statsContainer').style.display = 'flex';
+      row.classList.add('processing');
+      button.disabled = true;
+
+      //IMAGE AND PNG PARSING LOGIC
+      const dataRow = excelData[rowIndex];
+      const requestBody = {
+        xml_url: dataRow["XML Name"] || "",
+        image_url: dataRow["Screenshot Path"] || ""
+      };
+
+      const requestBodyCell = row.querySelector('.request-body-cell pre');
+      if (requestBodyCell) {
+        requestBodyCell.textContent = JSON.stringify(requestBody, null, 2);
+      }
+      
+      const responseCell = row.querySelector('.response-cell pre');
+      const statusCell = row.querySelector('.status-cell');
+      
+      try {
+        const response = await fetch("http://34.235.14.70:8003/invoke", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody)
+        });
+        //POSTED REQUEST AWAITING FOR RESPONE VALIDATION
+        const data = await response.json();
+        
+        //Bound value from EXCEL
+        const manualBoundsRaw = String(dataRow["Bound Value"] || "").trim();
+        const manualBoundsArray = manualBoundsRaw.split(/\s+/).map(bound => bound.trim().toLowerCase()).filter(Boolean);
+        
+        // Get FieldType from Excel
+        const fieldTypeFromExcel = String(dataRow["FieldType"] || "").trim().toLowerCase();
+        
+        let generatedBoundsArray = [];
+        let fieldTypeMatch = false;
+        let allTypeMatches = [];
+        
+        //LOGIC FOR MAPPING 
+        if (data?.agent_response?.fields && data.agent_response.fields.length > 0) {
+          generatedBoundsArray = data.agent_response.fields
+            .map(field => {
+              // Check for field type match - ONLY using the type field
+              const type = String(field?.type || "").toLowerCase();
+              
+              // Split the Excel field types into individual field types
+              // First, normalize the field type string by replacing multiple spaces with a single space
+              const normalizedFieldType = fieldTypeFromExcel ? fieldTypeFromExcel.replace(/\s+/g, ' ').trim().toLowerCase() : "";
+              
+              // Split into individual field types (e.g., "single-line text field", "email text field")
+              const excelFieldTypes = normalizedFieldType ? normalizedFieldType.split(/\s+(?=[a-z])/).filter(Boolean) : [];
+              
+              // Check if any of the Excel field types match this response type
+              let typeMatch = false;
+              
+              if (excelFieldTypes.length > 0) {
+                // Define mapping of Excel field types to expected response types
+                const fieldTypeMapping = {
+                  "email text field": ["email", "text", "string"],
+                  "numeric keypad text field": ["number", "numeric", "text", "string"],
+                  "phone number text field": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                  "phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                  "basic_phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                  "password text field": ["password", "text", "string"],
+                  "search field": ["search", "text", "string"],
+                  "single-line text field": ["text", "string", "single-line"],
+                  "otp/pin input field": ["otp", "pin", "text", "string"],
+                  "multi-line text field": ["text", "string", "multi-line"],
+                  "date picker text field": ["date", "text", "string"],
+                  "first_name text field": ["first_name", "name", "text", "string"],
+                  "first_name": ["first_name", "name", "text", "string"],
+                  "last_name text field": ["last_name", "name", "text", "string"],
+                  "last_name": ["last_name", "name", "text", "string"],
+                  "name text field": ["name", "first_name", "last_name", "full_name", "text", "string"],
+                   "name": ["name", "first_name", "last_name", "full_name", "text", "string"]
+                };
+                
+                // Special check for phone number types to ensure bidirectional matching
+                function isPhoneNumberType(type) {
+                  return ['phone', 'phone_number', 'basic_phone_number', 'basic'].includes(type.toLowerCase());
+                }
+                
+                // Check each Excel field type against the response type
+                for (const excelFieldType of excelFieldTypes) {
+                  if (fieldTypeMapping[excelFieldType]) {
+                    // Check if the response type is one of the expected types
+                    if (fieldTypeMapping[excelFieldType].some(expectedType => type === expectedType)) {
+                      typeMatch = true;
+                      break;
+                    }
+                  } else if (isPhoneNumberType(excelFieldType) && isPhoneNumberType(type)) {
+                    // Special check for phone number types
+                    typeMatch = true;
+                    break;
+                  } else if ((type === "search_term" || type === "sentence") && 
+                            (excelFieldType.includes("search") || excelFieldType.includes("search_term") || excelFieldType.includes("sentence"))) {
+                    // Special check for search_term and sentence types - match if Excel field type contains search/sentence
+                    typeMatch = true;
+                    break;
+                  } else {
+                    // If not in mapping, do a direct comparison
+                    if (type === excelFieldType) {
+                      typeMatch = true;
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              // Add the match result to our tracking array
+              allTypeMatches.push(typeMatch);
+              
+              return {
+              bounds: String(field?.metadata?.bounds || "").trim().toLowerCase(),
+              fieldName: field.field_name || "",
+                value: field.value !== undefined ? field.value : (field.text !== undefined ? field.text : ""),
+                type: type,
+                fakerFunction: field.faker_function || ""
+              };
+            })
+            .filter(item => item.bounds);
+        } else {
+          const directBound = String(data?.bounds || "").trim().toLowerCase();
+          if (directBound) {
+            const type = String(data?.type || "").toLowerCase();
+            
+            // Split the Excel field types into individual field types
+            // First, normalize the field type string by replacing multiple spaces with a single space
+            const normalizedFieldType = fieldTypeFromExcel ? fieldTypeFromExcel.replace(/\s+/g, ' ').trim().toLowerCase() : "";
+            
+            // Split into individual field types (e.g., "single-line text field", "email text field")
+            const excelFieldTypes = normalizedFieldType ? normalizedFieldType.split(/\s+(?=[a-z])/).filter(Boolean) : [];
+            
+            // Check if any of the Excel field types match this response type
+            let typeMatch = false;
+            
+            if (excelFieldTypes.length > 0) {
+              // Define mapping of Excel field types to expected response types
+              const fieldTypeMapping = {
+                "email text field": ["email", "text", "string"],
+                "numeric keypad text field": ["number", "numeric", "text", "string"],
+                "phone number text field": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                "phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                "basic_phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                "password text field": ["password", "text", "string"],
+                "search field": ["search", "text", "string"],
+                "single-line text field": ["text", "string", "single-line"],
+                "otp/pin input field": ["otp", "pin", "text", "string"],
+                "multi-line text field": ["text", "string", "multi-line"],
+                "date picker text field": ["date", "text", "string"],
+                "first_name text field": ["first_name", "name", "text", "string"],
+                  "first_name": ["first_name", "name", "text", "string"],
+                  "last_name text field": ["last_name", "name", "text", "string"],
+                  "last_name": ["last_name", "name", "text", "string"],
+                  "name text field": ["name", "first_name", "last_name", "full_name", "text", "string"],
+                   "name": ["name", "first_name", "last_name", "full_name", "text", "string"]                
+
+              };
+              
+              // Special check for phone number types to ensure bidirectional matching
+              function isPhoneNumberType(type) {
+                return ['phone', 'phone_number', 'basic_phone_number', 'basic'].includes(type.toLowerCase());
+              }
+              
+              // Check each Excel field type against the response type
+              for (const excelFieldType of excelFieldTypes) {
+                if (fieldTypeMapping[excelFieldType]) {
+                  // Check if the response type is one of the expected types
+                  if (fieldTypeMapping[excelFieldType].some(expectedType => type === expectedType)) {
+                    typeMatch = true;
+                    break;
+                  }
+                } else if (isPhoneNumberType(excelFieldType) && isPhoneNumberType(type)) {
+                  // Special check for phone number types
+                  typeMatch = true;
+                  break;
+                } else if ((type === "search_term" || type === "sentence") && 
+                          (excelFieldType.includes("search") || excelFieldType.includes("search_term") || excelFieldType.includes("sentence"))) {
+                  // Special check for search_term and sentence types - match if Excel field type contains search/sentence
+                  typeMatch = true;
+                  break;
+                } else {
+                  // If not in mapping, do a direct comparison
+                  if (type === excelFieldType) {
+                    typeMatch = true;
+                    break;
+                  }
+                }
+              }
+            }
+            
+            // Add the match result to our tracking array
+            allTypeMatches.push(typeMatch);
+            
+            generatedBoundsArray.push({ 
+            bounds: directBound, 
+            fieldName: data?.field_name || "",
+              value: data?.value || data?.text || "",
+              type: type,
+              fakerFunction: data?.faker_function || ""
+          });
+          }
+        }
+        
+        // Only set fieldTypeMatch to true if ALL types matched
+        fieldTypeMatch = allTypeMatches.length > 0 && allTypeMatches.every(match => match === true);
+        
+        const boundsMatch = manualBoundsArray.length > 0 && 
+                           manualBoundsArray.every(bound => 
+                             generatedBoundsArray.some(item => item.bounds.includes(bound))
+                           );
+
+        const formattedJson = JSON.stringify(data, null, 2);
+        const responseBoundsCell = row.querySelector('.response-bounds-cell');
+        if (responseBoundsCell) {
+          if (generatedBoundsArray.length > 0) {
+            // Create a comparison section with Excel values on the left and response values on the right
+            let comparisonHtml = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+            
+            // Add bounds comparison
+            comparisonHtml += '<div style="display: flex; flex-direction: column; gap: 5px;">';
+            comparisonHtml += '<div style="font-weight: bold; margin-bottom: 5px;">Bounds Comparison:</div>';
+            
+            // For each Excel bound, find a matching response bound or mark as missing
+            manualBoundsArray.forEach(excelBound => {
+              const matchingResponse = generatedBoundsArray.find(item => item.bounds.includes(excelBound));
+              const isMatch = matchingResponse !== undefined;
+              const matchClass = isMatch ? "bounds-match" : "bounds-differ";
+              
+              comparisonHtml += `
+                <div style="display: flex; justify-content: space-between; padding: 5px; background-color: #222; border-radius: 4px;">
+                  <div>Excel: <span class="${matchClass}">${excelBound}</span></div>
+                  <div>Response: <span class="${matchClass}">${matchingResponse ? matchingResponse.bounds : 'Not Found'}</span></div>
+                </div>
+              `;
+            });
+            
+            // Add any response bounds that didn't match Excel bounds
+            generatedBoundsArray.forEach(responseItem => {
+              const hasMatch = manualBoundsArray.some(excelBound => responseItem.bounds.includes(excelBound));
+              if (!hasMatch) {
+                comparisonHtml += `
+                  <div style="display: flex; justify-content: space-between; padding: 5px; background-color: #222; border-radius: 4px;">
+                    <div>Excel: <span class="bounds-differ">Not Found</span></div>
+                    <div>Response: <span class="bounds-differ">${responseItem.bounds}</span></div>
+                  </div>
+                `;
+              }
+            });
+            
+            comparisonHtml += '</div>';
+            
+            // Add field type comparison - one-to-one mapping
+            comparisonHtml += '<div style="display: flex; flex-direction: column; gap: 5px;">';
+            comparisonHtml += '<div style="font-weight: bold; margin-bottom: 5px;">Field Type Comparison:</div>';
+            
+            // Split the Excel field types into individual field types
+            // First, normalize the field type string by replacing multiple spaces with a single space
+            const normalizedFieldType = fieldTypeFromExcel ? fieldTypeFromExcel.replace(/\s+/g, ' ').trim().toLowerCase() : "";
+            
+            // Split into individual field types (e.g., "single-line text field", "email text field")
+            const excelFieldTypes = normalizedFieldType ? normalizedFieldType.split(/\s+(?=[a-z])/).filter(Boolean) : [];
+            
+            // Define mapping of Excel field types to expected response types
+            const fieldTypeMapping = {
+              "email text field": ["email", "text", "string"],
+              "numeric keypad text field": ["number", "numeric", "text", "string"],
+              "phone number text field": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+              "phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+              "basic_phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+              "password text field": ["password", "text", "string"],
+              "search field": ["search", "text", "string"],
+              "single-line text field": ["text", "string", "single-line"],
+              "otp/pin input field": ["otp", "pin", "text", "string"],
+              "multi-line text field": ["text", "string", "multi-line"],
+              "date picker text field": ["date", "text", "string"],
+              "first_name text field": ["first_name", "name", "text", "string"],
+                  "first_name": ["first_name", "name", "text", "string"],
+                  "last_name text field": ["last_name", "name", "text", "string"],
+                  "last_name": ["last_name", "name", "text", "string"],
+                  "name text field": ["name", "first_name", "last_name", "full_name", "text", "string"],
+                   "name": ["name", "first_name", "last_name", "full_name", "text", "string"]
+            };
+            
+            // Special check for phone number types to ensure bidirectional matching
+            function isPhoneNumberType(type) {
+              return ['phone', 'phone_number', 'basic_phone_number', 'basic'].includes(type.toLowerCase());
+            }
+            
+            // For each response field, check if its type matches any of the Excel field types
+            generatedBoundsArray.forEach((responseItem, index) => {
+              let typeMatch = false;
+              let matchedExcelType = null;
+              
+              // Check each Excel field type against the response type
+              for (const excelFieldType of excelFieldTypes) {
+                if (fieldTypeMapping[excelFieldType]) {
+                  // Check if the response type is one of the expected types
+                  if (fieldTypeMapping[excelFieldType].some(expectedType => responseItem.type === expectedType)) {
+                    typeMatch = true;
+                    matchedExcelType = excelFieldType;
+                    break;
+                  }
+                } else if (isPhoneNumberType(excelFieldType) && isPhoneNumberType(responseItem.type)) {
+                  // Special check for phone number types
+                  typeMatch = true;
+                  matchedExcelType = excelFieldType;
+                  break;
+                } else if ((responseItem.type === "search_term" || responseItem.type === "sentence") && 
+                          (excelFieldType.includes("search") || excelFieldType.includes("search_term") || excelFieldType.includes("sentence"))) {
+                  // Special check for search_term and sentence types - match if Excel field type contains search/sentence
+                  typeMatch = true;
+                  break;
+                } else {
+                  // If not in mapping, do a direct comparison
+                  if (responseItem.type === excelFieldType) {
+                    typeMatch = true;
+                    matchedExcelType = excelFieldType;
+                    break;
+                  }
+                }
+              }
+              
+              const matchClass = typeMatch ? "bounds-match" : "bounds-differ";
+              
+              comparisonHtml += `
+                <div style="display: flex; justify-content: space-between; padding: 5px; background-color: #222; border-radius: 4px;">
+                  <div>Excel: <span class="${matchClass}">${matchedExcelType || excelFieldTypes.join(', ') || 'None'}</span></div>
+                  <div>Response: <span class="${matchClass}">${responseItem.type || 'None'}</span></div>
+                </div>
+              `;
+            });
+            
+            // If there are no response fields but we have Excel field types, show them as unmatched
+            if (generatedBoundsArray.length === 0 && excelFieldTypes.length > 0) {
+              comparisonHtml += `
+                <div style="display: flex; justify-content: space-between; padding: 5px; background-color: #222; border-radius: 4px;">
+                  <div>Excel: <span class="bounds-differ">${excelFieldTypes.join(', ')}</span></div>
+                  <div>Response: <span class="bounds-differ">Not Found</span></div>
+                </div>
+              `;
+            }
+            
+            comparisonHtml += '</div>';
+            comparisonHtml += '</div>';
+            
+            responseBoundsCell.innerHTML = comparisonHtml;
+          } else {
+            responseBoundsCell.innerHTML = '<span class="bounds-differ">No bounds found</span>';
+          }
+        }
+
+        if (responseCell) responseCell.textContent = formattedJson;
+        if (statusCell) {
+          const overallMatch = boundsMatch && fieldTypeMatch;
+          statusCell.innerHTML = `
+            <div class="${boundsMatch ? 'bounds-match' : 'bounds-differ'}">Response Bounds ${boundsMatch ? 'match' : 'differ'}</div>
+            <div class="${fieldTypeMatch ? 'bounds-match' : 'bounds-differ'}">Field Type ${fieldTypeMatch ? 'match' : 'differ'}</div>
+            <div class="${overallMatch ? 'bounds-match' : 'bounds-differ'}">${overallMatch ? 'Pass' : 'Fail'}</div>
+          `;
+        }
+        
+        const result = {
+          app: dataRow["App Name"] || "",
+          screenshotUrl: dataRow["Screenshot Path"] || "",
+          manualBounds: manualBoundsRaw,
+          fieldType: fieldTypeFromExcel,
+          generatedBounds: generatedBoundsArray.map(item => 
+            `${item.bounds}${item.fieldName ? ` - "field_name": "${item.fieldName}"` : ""}${item.value ? ` - "value": "${item.value}"` : ""}${item.type ? ` - "type": "${item.type}"` : ""}${item.fakerFunction ? ` - "faker_function": "${item.fakerFunction}"` : ""}`
+          ).join(" "),
+          boundsMatch: boundsMatch,
+          fieldTypeMatch: fieldTypeMatch,
+          match: boundsMatch && fieldTypeMatch,
+          response: formattedJson,
+          rowIndex: rowIndex
+        };
+
+        const existingResultIndex = dataGeneratorResults.findIndex(r => r.rowIndex === rowIndex);
+        if (existingResultIndex >= 0) {
+          dataGeneratorResults[existingResultIndex] = result;
+        } else {
+          dataGeneratorResults.push(result);
+        }
+        
+        row.classList.remove('processing');
+        row.classList.add(boundsMatch ? 'processed-pass' : 'processed-fail');
+        rowsProcessed.add(rowIndex);
+
+        // Update confusion matrix metrics
+        updateConfusionMatrix(dataRow, data);
+        updateConfusionMatrixBounds(dataRow, data);
+        
+        // Update all stats
+        updateStats();
+
+        const dataGenerationCount = document.getElementById('dataGenerationCount');
+        if (data?.data_generation_required === true || data?.agent_response?.data_generation_required === true) {
+          const currentCount = parseInt(dataGenerationCount.textContent) || 0;
+          dataGenerationCount.textContent = currentCount + 1;
+        }
+
+        hasUnsavedData = true;
+
+        // Add console logging to help debug the field type matching
+        console.log("Field Type Comparison:", {
+          fieldTypeFromExcel,
+          generatedTypes: generatedBoundsArray.map(item => item.type),
+          fieldTypeMatch
+        });
+
+      } catch (error) {
+        console.error("Error in data generator:", error);
+        if (responseCell) responseCell.textContent = `Error: ${error.message}`;
+        if (statusCell) statusCell.innerHTML = '<span class="bounds-differ">Failed</span>';
+        
+        row.classList.remove('processing');
+        row.classList.add('processed-fail');
+        rowsProcessed.add(rowIndex);
+        updateStats();
+      } finally {
+        isProcessing = false;
+        button.disabled = false;
+        if (dataGeneratorResults.length > 0) {
+          document.getElementById('exportButton').disabled = false;
+        }
+      }
+    }
+
+    function updateStats() {
+      let totalProcessed = rowsProcessed.size;
+      let matchCount = dataGeneratorResults.filter(r => r.match).length;
+      let differCount = totalProcessed - matchCount;
+      
+      // Update main stats
+      document.getElementById('totalProcessed').textContent = totalProcessed;
+      document.getElementById('matchCount').textContent = matchCount;
+      document.getElementById('differCount').textContent = differCount;
+      
+      // Update pass/fail counts
+      document.getElementById('passCount').textContent = matchCount;
+      document.getElementById('failCount').textContent = differCount;
+
+      // Show stats container
+      document.getElementById('statsContainer').style.display = 'flex';
+    }
+
+    async function runDataGenerator() {
+      if (!excelData || excelData.length === 0) {
+        alert("Please upload and process an Excel file first.");
+        return;
+      }
+
+      if (isProcessing && !isPaused) {
+        alert("Already processing data. Please wait or click pause.");
+        return;
+      }
+      
+      // If we're resuming from a paused state
+      if (isPaused) {
+        isPaused = false;
+        document.getElementById('pauseButton').textContent = "Pause Processing";
+        // Continue from where we left off
+        processRemainingQueue();
+        return;
+      }
+
+      // Starting fresh
+      isProcessing = true;
+      dataGeneratorResults = [];
+      rowsProcessed = new Set();
+      currentProcessingIndex = 0;
+      
+      // Reset all counters at the start
+      resetConfusionMatrixCounters();
+      document.getElementById('passCount').textContent = '0';
+      document.getElementById('failCount').textContent = '0';
+      document.getElementById('dataGenerationCount').textContent = '0';
+
+      // Reset UI
+      const tableRows = document.querySelectorAll('#previewTable tbody tr');
+      tableRows.forEach(row => {
+        const requestCell = row.querySelector('.request-body-cell pre');
+        const responseCell = row.querySelector('.response-cell pre');
+        const statusCell = row.querySelector('.status-cell');
+        const responseBoundsCell = row.querySelector('.response-bounds-cell');
+        
+        if (requestCell) requestCell.textContent = '';
+        if (responseCell) responseCell.textContent = '';
+        if (statusCell) statusCell.textContent = '';
+        if (responseBoundsCell) responseBoundsCell.innerHTML = '';
+        row.classList.remove('processing', 'processed-pass', 'processed-fail');
+      });
+      
+      // Setup progress indicators
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+      progressText.textContent = '0%';
+      
+      // Disable buttons
+      document.getElementById('generateButton').disabled = true;
+      document.getElementById('exportButton').disabled = false; // Enable export even during processing
+      
+      // Show pause button
+      const pauseButton = document.getElementById('pauseButton');
+      if (!pauseButton) {
+        const newPauseButton = document.createElement('button');
+        newPauseButton.id = 'pauseButton';
+        newPauseButton.className = 'button primary';
+        newPauseButton.textContent = 'Pause Processing';
+        newPauseButton.onclick = togglePause;
+        document.querySelector('.button-container').appendChild(newPauseButton);
+      } else {
+        pauseButton.style.display = 'inline-block';
+        pauseButton.textContent = 'Pause Processing';
+      }
+      
+      // Disable play buttons
+      const playButtons = document.querySelectorAll('.play-button');
+      playButtons.forEach(btn => btn.disabled = true);
+
+      // Create processing queue
+      processingQueue = Array.from({ length: excelData.length }, (_, i) => i);
+      
+      // Start processing
+      processRemainingQueue();
+    }
+
+    // Function to process the remaining queue
+    async function processRemainingQueue() {
+      if (!isProcessing || isPaused) return;
+      
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+      
+      try {
+        while (currentProcessingIndex < processingQueue.length && !isPaused) {
+          const i = processingQueue[currentProcessingIndex];
+          const row = excelData[i];
+          const requestBody = {
+            xml_url: row["XML Name"] || "",
+            image_url: row["Screenshot Path"] || ""
+          };
+
+          // Update progress
+          const progress = Math.round(((currentProcessingIndex) / processingQueue.length) * 100);
+          progressBar.style.width = `${progress}%`;
+          progressText.textContent = `Processing ${currentProcessingIndex+1}/${processingQueue.length} (${progress}%)`;
+          
+          const tableRow = document.querySelector(`#previewTable tbody tr:nth-child(${i+1})`);
+          if (!tableRow) {
+            currentProcessingIndex++;
+            continue;
+          }
+          
+          tableRow.classList.add('processing');
+          
+          const requestBodyCell = tableRow.querySelector('.request-body-cell pre');
+          if (requestBodyCell) requestBodyCell.textContent = JSON.stringify(requestBody, null, 2);
+          
+          const responseCell = tableRow.querySelector('.response-cell pre');
+          const statusCell = tableRow.querySelector('.status-cell');
+
+          try {
+            const response = await fetch("http://34.235.14.70:8003/invoke", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(requestBody)
+            });
+
+            const data = await response.json();
+            
+            const manualBoundsRaw = String(row["Bound Value"] || "").trim();
+            const manualBoundsArray = manualBoundsRaw.split(/\s+/).map(bound => bound.trim().toLowerCase()).filter(Boolean);
+            
+            // Get FieldType from Excel
+            const fieldTypeFromExcel = String(row["FieldType"] || "").trim().toLowerCase();
+            
+            let generatedBoundsArray = [];
+            let fieldTypeMatch = false;
+            let allTypeMatches = [];
+            
+            if (data?.agent_response?.fields && data.agent_response.fields.length > 0) {
+              generatedBoundsArray = data.agent_response.fields
+                .map(field => {
+                  // Check for field type match - ONLY using the type field
+                  const type = String(field?.type || "").toLowerCase();
+                  
+                  // Split the Excel field types into individual field types
+                  // First, normalize the field type string by replacing multiple spaces with a single space
+                  const normalizedFieldType = fieldTypeFromExcel ? fieldTypeFromExcel.replace(/\s+/g, ' ').trim().toLowerCase() : "";
+                  
+                  // Split into individual field types (e.g., "single-line text field", "email text field")
+                  const excelFieldTypes = normalizedFieldType ? normalizedFieldType.split(/\s+(?=[a-z])/).filter(Boolean) : [];
+                  
+                  // Check if any of the Excel field types match this response type
+                  let typeMatch = false;
+                  
+                  if (excelFieldTypes.length > 0) {
+                    // Define mapping of Excel field types to expected response types
+                    const fieldTypeMapping = {
+                      "email text field": ["email", "text", "string"],
+                      "numeric keypad text field": ["number", "numeric", "text", "string"],
+                      "phone number text field": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                      "phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                      "basic_phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                      "password text field": ["password", "text", "string"],
+                      "search field": ["search", "text", "string"],
+                      "single-line text field": ["text", "string", "single-line"],
+                      "otp/pin input field": ["otp", "pin", "text", "string"],
+                      "multi-line text field": ["text", "string", "multi-line"],
+                      "date picker text field": ["date", "text", "string"],
+                      "first_name text field": ["first_name", "name", "text", "string"],
+                  "first_name": ["first_name", "name", "text", "string"],
+                  "last_name text field": ["last_name", "name", "text", "string"],
+                  "last_name": ["last_name", "name", "text", "string"],
+                  "name text field": ["name", "first_name", "last_name", "full_name", "text", "string"],
+                   "name": ["name", "first_name", "last_name", "full_name", "text", "string"]
+                    };
+                    
+                    // Special check for phone number types to ensure bidirectional matching
+                    function isPhoneNumberType(type) {
+                      return ['phone', 'phone_number', 'basic_phone_number', 'basic'].includes(type.toLowerCase());
+                    }
+                    
+                    // Check each Excel field type against the response type
+                    for (const excelFieldType of excelFieldTypes) {
+                      if (fieldTypeMapping[excelFieldType]) {
+                        // Check if the response type is one of the expected types
+                        if (fieldTypeMapping[excelFieldType].some(expectedType => type === expectedType)) {
+                          typeMatch = true;
+                          break;
+                        }
+                      } else if (isPhoneNumberType(excelFieldType) && isPhoneNumberType(type)) {
+                        // Special check for phone number types
+                        typeMatch = true;
+                        break;
+                      } else if ((type === "search_term" || type === "sentence") && 
+                                (excelFieldType.includes("search") || excelFieldType.includes("search_term") || excelFieldType.includes("sentence"))) {
+                        // Special check for search_term and sentence types - match if Excel field type contains search/sentence
+                        typeMatch = true;
+                        break;
+                      } else {
+                        // If not in mapping, do a direct comparison
+                        if (type === excelFieldType) {
+                          typeMatch = true;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                  
+                  // Add the match result to our tracking array
+                  allTypeMatches.push(typeMatch);
+                  
+                  return {
+                  bounds: String(field?.metadata?.bounds || "").trim().toLowerCase(),
+                  fieldName: field.field_name || "",
+                    value: field.value !== undefined ? field.value : (field.text !== undefined ? field.text : ""),
+                    type: type,
+                    fakerFunction: field.faker_function || ""
+                  };
+                })
+                .filter(item => item.bounds);
+            } else {
+              const directBound = String(data?.bounds || "").trim().toLowerCase();
+              if (directBound) {
+                const type = String(data?.type || "").toLowerCase();
+                
+                // Split the Excel field types into individual field types
+                // First, normalize the field type string by replacing multiple spaces with a single space
+                const normalizedFieldType = fieldTypeFromExcel ? fieldTypeFromExcel.replace(/\s+/g, ' ').trim().toLowerCase() : "";
+                
+                // Split into individual field types (e.g., "single-line text field", "email text field")
+                const excelFieldTypes = normalizedFieldType ? normalizedFieldType.split(/\s+(?=[a-z])/).filter(Boolean) : [];
+                
+                // Check if any of the Excel field types match this response type
+                let typeMatch = false;
+                
+                if (excelFieldTypes.length > 0) {
+                  // Define mapping of Excel field types to expected response types
+                  const fieldTypeMapping = {
+                    "email text field": ["email", "text", "string"],
+                    "numeric keypad text field": ["number", "numeric", "text", "string"],
+                    "phone number text field": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                    "phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                    "basic_phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                    "password text field": ["password", "text", "string"],
+                    "search field": ["search", "text", "string"],
+                    "single-line text field": ["text", "string", "single-line"],
+                    "otp/pin input field": ["otp", "pin", "text", "string"],
+                    "multi-line text field": ["text", "string", "multi-line"],
+                    "date picker text field": ["date", "text", "string"],
+                    "first_name text field": ["first_name", "name", "text", "string"],
+                  "first_name": ["first_name", "name", "text", "string"],
+                  "last_name text field": ["last_name", "name", "text", "string"],
+                  "last_name": ["last_name", "name", "text", "string"],
+                  "name text field": ["name", "first_name", "last_name", "full_name", "text", "string"],
+                   "name": ["name", "first_name", "last_name", "full_name", "text", "string"]
+                  };
+                  
+                  // Special check for phone number types to ensure bidirectional matching
+                  function isPhoneNumberType(type) {
+                    return ['phone', 'phone_number', 'basic_phone_number', 'basic'].includes(type.toLowerCase());
+                  }
+                  
+                  // Check each Excel field type against the response type
+                  for (const excelFieldType of excelFieldTypes) {
+                    if (fieldTypeMapping[excelFieldType]) {
+                      // Check if the response type is one of the expected types
+                      if (fieldTypeMapping[excelFieldType].some(expectedType => type === expectedType)) {
+                        typeMatch = true;
+                        break;
+                      }
+                    } else if (isPhoneNumberType(excelFieldType) && isPhoneNumberType(type)) {
+                      // Special check for phone number types
+                      typeMatch = true;
+                      break;
+                    } else if ((type === "search_term" || type === "sentence") && 
+                              (excelFieldType.includes("search") || excelFieldType.includes("search_term") || excelFieldType.includes("sentence"))) {
+                      // Special check for search_term and sentence types - match if Excel field type contains search/sentence
+                      typeMatch = true;
+                      break;
+                    } else {
+                      // If not in mapping, do a direct comparison
+                      if (type === excelFieldType) {
+                        typeMatch = true;
+                        break;
+                      }
+                    }
+                  }
+                }
+                
+                // Add the match result to our tracking array
+                allTypeMatches.push(typeMatch);
+                
+                generatedBoundsArray.push({ 
+                bounds: directBound, 
+                fieldName: data?.field_name || "",
+                  value: data?.value || data?.text || "",
+                  type: type,
+                  fakerFunction: data?.faker_function || ""
+              });
+              }
+            }
+            
+            // Only set fieldTypeMatch to true if ALL types matched
+            fieldTypeMatch = allTypeMatches.length > 0 && allTypeMatches.every(match => match === true);
+            
+            const boundsMatch = manualBoundsArray.length > 0 && 
+                               manualBoundsArray.every(bound => 
+                                 generatedBoundsArray.some(item => item.bounds.includes(bound))
+                               );
+
+            const formattedJson = JSON.stringify(data, null, 2);
+            const responseBoundsCell = tableRow.querySelector('.response-bounds-cell');
+            if (responseBoundsCell) {
+              if (generatedBoundsArray.length > 0) {
+                // Create a comparison section with Excel values on the left and response values on the right
+                let comparisonHtml = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+                
+                // Add bounds comparison
+                comparisonHtml += '<div style="display: flex; flex-direction: column; gap: 5px;">';
+                comparisonHtml += '<div style="font-weight: bold; margin-bottom: 5px;">Bounds Comparison:</div>';
+                
+                // For each Excel bound, find a matching response bound or mark as missing
+                manualBoundsArray.forEach(excelBound => {
+                  const matchingResponse = generatedBoundsArray.find(item => item.bounds.includes(excelBound));
+                  const isMatch = matchingResponse !== undefined;
+                  const matchClass = isMatch ? "bounds-match" : "bounds-differ";
+                  
+                  comparisonHtml += `
+                    <div style="display: flex; justify-content: space-between; padding: 5px; background-color: #222; border-radius: 4px;">
+                      <div>Excel: <span class="${matchClass}">${excelBound}</span></div>
+                      <div>Response: <span class="${matchClass}">${matchingResponse ? matchingResponse.bounds : 'Not Found'}</span></div>
+                    </div>
+                  `;
+                });
+                
+                // Add any response bounds that didn't match Excel bounds
+                generatedBoundsArray.forEach(responseItem => {
+                  const hasMatch = manualBoundsArray.some(excelBound => responseItem.bounds.includes(excelBound));
+                  if (!hasMatch) {
+                    comparisonHtml += `
+                      <div style="display: flex; justify-content: space-between; padding: 5px; background-color: #222; border-radius: 4px;">
+                        <div>Excel: <span class="bounds-differ">Not Found</span></div>
+                        <div>Response: <span class="bounds-differ">${responseItem.bounds}</span></div>
+                      </div>
+                    `;
+                  }
+                });
+                
+                comparisonHtml += '</div>';
+                
+                // Add field type comparison - one-to-one mapping
+                comparisonHtml += '<div style="display: flex; flex-direction: column; gap: 5px;">';
+                comparisonHtml += '<div style="font-weight: bold; margin-bottom: 5px;">Field Type Comparison:</div>';
+                
+                // Split the Excel field types into individual field types
+                // First, normalize the field type string by replacing multiple spaces with a single space
+                const normalizedFieldType = fieldTypeFromExcel ? fieldTypeFromExcel.replace(/\s+/g, ' ').trim().toLowerCase() : "";
+                
+                // Split into individual field types (e.g., "single-line text field", "email text field")
+                const excelFieldTypes = normalizedFieldType ? normalizedFieldType.split(/\s+(?=[a-z])/).filter(Boolean) : [];
+                
+                // Define mapping of Excel field types to expected response types
+                const fieldTypeMapping = {
+                  "email text field": ["email", "text", "string"],
+                  "numeric keypad text field": ["number", "numeric", "text", "string"],
+                  "phone number text field": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                  "phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                  "basic_phone_number": ["phone", "phone_number", "basic_phone_number", "basic", "number", "text", "string"],
+                  "password text field": ["password", "text", "string"],
+                  "search field": ["search", "text", "string"],
+                  "single-line text field": ["text", "string", "single-line"],
+                  "otp/pin input field": ["otp", "pin", "text", "string"],
+                  "multi-line text field": ["text", "string", "multi-line"],
+                  "date picker text field": ["date", "text", "string"],
+                  "first_name text field": ["first_name", "name", "text", "string"],
+                  "first_name": ["first_name", "name", "text", "string"],
+                  "last_name text field": ["last_name", "name", "text", "string"],
+                  "last_name": ["last_name", "name", "text", "string"],
+                  "name text field": ["name", "first_name", "last_name", "full_name", "text", "string"],
+                  "name": ["name", "first_name", "last_name", "full_name", "text", "string"]
+                };
+                
+                // Special check for phone number types to ensure bidirectional matching
+                function isPhoneNumberType(type) {
+                  return ['phone', 'phone_number', 'basic_phone_number', 'basic'].includes(type.toLowerCase());
+                }
+                
+                // For each response field, check if its type matches any of the Excel field types
+                generatedBoundsArray.forEach((responseItem, index) => {
+                  let typeMatch = false;
+                  let matchedExcelType = null;
+                  
+                  // Check each Excel field type against the response type
+                  for (const excelFieldType of excelFieldTypes) {
+                    if (fieldTypeMapping[excelFieldType]) {
+                      // Check if the response type is one of the expected types
+                      if (fieldTypeMapping[excelFieldType].some(expectedType => responseItem.type === expectedType)) {
+                        typeMatch = true;
+                        matchedExcelType = excelFieldType;
+                        break;
+                      }
+                    } else if (isPhoneNumberType(excelFieldType) && isPhoneNumberType(responseItem.type)) {
+                      // Special check for phone number types
+                      typeMatch = true;
+                      matchedExcelType = excelFieldType;
+                      break;
+                    } else if ((responseItem.type === "search_term" || responseItem.type === "sentence") && 
+                              (excelFieldType.includes("search") || excelFieldType.includes("search_term") || excelFieldType.includes("sentence"))) {
+                      // Special check for search_term and sentence types - match if Excel field type contains search/sentence
+                      typeMatch = true;
+                      break;
+                    } else {
+                      // If not in mapping, do a direct comparison
+                      if (responseItem.type === excelFieldType) {
+                        typeMatch = true;
+                        matchedExcelType = excelFieldType;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  const matchClass = typeMatch ? "bounds-match" : "bounds-differ";
+                  
+                  comparisonHtml += `
+                    <div style="display: flex; justify-content: space-between; padding: 5px; background-color: #222; border-radius: 4px;">
+                      <div>Excel: <span class="${matchClass}">${matchedExcelType || excelFieldTypes.join(', ') || 'None'}</span></div>
+                      <div>Response: <span class="${matchClass}">${responseItem.type || 'None'}</span></div>
+                    </div>
+                  `;
+                });
+                
+                // If there are no response fields but we have Excel field types, show them as unmatched
+                if (generatedBoundsArray.length === 0 && excelFieldTypes.length > 0) {
+                  comparisonHtml += `
+                    <div style="display: flex; justify-content: space-between; padding: 5px; background-color: #222; border-radius: 4px;">
+                      <div>Excel: <span class="bounds-differ">${excelFieldTypes.join(', ')}</span></div>
+                      <div>Response: <span class="bounds-differ">Not Found</span></div>
+                    </div>
+                  `;
+                }
+                
+                comparisonHtml += '</div>';
+                comparisonHtml += '</div>';
+                
+                responseBoundsCell.innerHTML = comparisonHtml;
+              } else {
+                responseBoundsCell.innerHTML = '<span class="bounds-differ">No bounds found</span>';
+              }
+            }
+            
+            if (responseCell) responseCell.textContent = formattedJson;
+            if (statusCell) {
+              const overallMatch = boundsMatch && fieldTypeMatch;
+              statusCell.innerHTML = `
+                <div class="${boundsMatch ? 'bounds-match' : 'bounds-differ'}">Response Bounds ${boundsMatch ? 'match' : 'differ'}</div>
+                <div class="${fieldTypeMatch ? 'bounds-match' : 'bounds-differ'}">Field Type ${fieldTypeMatch ? 'match' : 'differ'}</div>
+                <div class="${overallMatch ? 'bounds-match' : 'bounds-differ'}">${overallMatch ? 'Pass' : 'Fail'}</div>
+              `;
+            }
+
+            const result = {
+              app: row["App Name"] || "",
+              screenshotUrl: row["Screenshot Path"] || "",
+              manualBounds: manualBoundsRaw,
+              fieldType: fieldTypeFromExcel,
+              generatedBounds: generatedBoundsArray.map(item => 
+                `${item.bounds}${item.fieldName ? ` - "field_name": "${item.fieldName}"` : ""}${item.value ? ` - "value": "${item.value}"` : ""}${item.type ? ` - "type": "${item.type}"` : ""}${item.fakerFunction ? ` - "faker_function": "${item.fakerFunction}"` : ""}`
+              ).join(" "),
+              boundsMatch: boundsMatch,
+              fieldTypeMatch: fieldTypeMatch,
+              match: boundsMatch && fieldTypeMatch,
+              response: formattedJson,
+              rowIndex: i
+            };
+            dataGeneratorResults.push(result);
+            
+            tableRow.classList.remove('processing');
+            tableRow.classList.add(boundsMatch ? 'processed-pass' : 'processed-fail');
+            rowsProcessed.add(i);
+
+            // Update confusion matrix metrics
+            updateConfusionMatrix(row, data);
+            updateConfusionMatrixBounds(row, data);
+
+            // Update data generation count if needed
+            if (data?.data_generation_required === true || data?.agent_response?.data_generation_required === true) {
+              const dataGenerationCount = document.getElementById('dataGenerationCount');
+              const currentCount = parseInt(dataGenerationCount.textContent) || 0;
+              dataGenerationCount.textContent = currentCount + 1;
+            }
+
+            // Add console logging to help debug the field type matching
+            console.log("Field Type Comparison:", {
+              fieldTypeFromExcel,
+              generatedTypes: generatedBoundsArray.map(item => item.type),
+              fieldTypeMatch
+            });
+
+          } catch (error) {
+            console.error("Error in data generator:", error);
+            if (responseCell) responseCell.textContent = `Error: ${error.message}`;
+            if (statusCell) statusCell.innerHTML = '<span class="bounds-differ">Failed</span>';
+            tableRow.classList.remove('processing');
+            tableRow.classList.add('processed-fail');
+            rowsProcessed.add(i);
+          }
+
+          // Update stats after each row
+          updateStats();
+          currentProcessingIndex++;
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Check if we completed all processing or just paused
+        if (currentProcessingIndex >= processingQueue.length) {
+          // All done
+          progressBar.style.width = '100%';
+          progressText.textContent = `Complete! Processed ${processingQueue.length}/${processingQueue.length} (100%)`;
+          
+          // Hide pause button when complete
+          const pauseButton = document.getElementById('pauseButton');
+          if (pauseButton) pauseButton.style.display = 'none';
+          
+          isProcessing = false;
+          document.getElementById('generateButton').disabled = false;
+          document.getElementById('exportButton').disabled = false;
+          
+          // Re-enable play buttons
+          const playButtons = document.querySelectorAll('.play-button');
+          playButtons.forEach(btn => btn.disabled = false);
+        }
+      
+      } catch (error) {
+        console.error("Error processing data:", error);
+        alert("An error occurred while generating data. Please check the console for details.");
+        isProcessing = false;
+        isPaused = false;
+        document.getElementById('generateButton').disabled = false;
+        
+        // Re-enable play buttons
+        const playButtons = document.querySelectorAll('.play-button');
+        playButtons.forEach(btn => btn.disabled = false);
+      }
+    }
+
+    // Function to toggle pause state
+    function togglePause() {
+      isPaused = !isPaused;
+      const pauseButton = document.getElementById('pauseButton');
+      
+      if (isPaused) {
+        pauseButton.textContent = "Resume Processing";
+        // Enable export button during pause
+        document.getElementById('exportButton').disabled = false;
+      } else {
+        pauseButton.textContent = "Pause Processing";
+        processRemainingQueue(); // Resume processing
+      }
+    }
+
+    function exportDataGeneratorResults() {
+      if (dataGeneratorResults.length === 0) {
+        alert("No results to export. Please generate data first.");
+        return;
+      }
+
+      // Generate detailed results rows
+      const detailedResultsRows = dataGeneratorResults.map(result => {
+        // Create detailed status that shows both bounds match and field type match
+        const boundsStatusHtml = result.boundsMatch ? 
+          '<div class="pass-status">Response Bounds match</div>' : 
+          '<div class="fail-status">Response Bounds differ</div>';
+        
+        const fieldTypeStatusHtml = result.fieldTypeMatch ? 
+          '<div class="pass-status">Field Type match</div>' : 
+          '<div class="fail-status">Field Type differ</div>';
+          
+        const overallStatusHtml = result.match ? 
+          '<div class="pass-status">Pass</div>' : 
+          '<div class="fail-status">Fail</div>';
+        
+        const detailedStatusHtml = `${boundsStatusHtml}${fieldTypeStatusHtml}${overallStatusHtml}`;
+
+        // Find the corresponding row in the UI to extract the Response Bounds HTML
+        const row = document.querySelector(`#previewTable tbody tr:nth-child(${result.rowIndex + 1})`);
+        let responseBoundsHtml = '';
+        if (row) {
+          const responseBoundsCell = row.querySelector('.response-bounds-cell');
+          if (responseBoundsCell) {
+            responseBoundsHtml = responseBoundsCell.innerHTML;
+          }
+        }
+        
+        return `
+          <tr>
+            <td>${result.app || ""}</td>
+            <td>${result.screenshotUrl || ""}</td>
+            <td>${result.manualBounds || ""}</td>
+            <td>${result.fieldType || ""}</td>
+            <td>${result.generatedBounds || ""}</td>
+            <td class="response-bounds-html">${responseBoundsHtml}</td>
+            <td class="response-cell">
+              <div class="response-container">
+                <pre class="response-content">${result.response || ""}</pre>
+              </div>
+            </td>
+            <td>${detailedStatusHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Add processing status message if paused
+      const processingStatus = isPaused ? 
+        `<div style="background-color: #fff3cd; color: #856404; padding: 10px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ffeeba;">
+          Note: Processing was paused at ${currentProcessingIndex}/${processingQueue.length} items (${Math.round((currentProcessingIndex/processingQueue.length)*100)}% complete).
+         </div>` : '';
+
+      // Generate the report content
+      const reportContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Data Generator Report</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                max-width: 1200px;
+                margin: 20px auto;
+                padding: 20px;
+                background: #fff;
+                color: #333;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                background: #fff;
+              }
+              th, td {
+                border: 1px solid #ddd;
+                padding: 12px;
+                text-align: left;
+                color: #333;
+              }
+              th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+              }
+              h2, h3 {
+                color: #333;
+                margin-top: 20px;
+              }
+              .matrix-container {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 30px;
+                gap: 20px;
+              }
+              .matrix-section {
+                flex: 1;
+              }
+              .pass-status {
+                color: #28a745;
+                font-weight: bold;
+                padding: 2px 4px;
+                margin: 2px 0;
+                display: block;
+              }
+              .fail-status {
+                color: #dc3545;
+                font-weight: bold;
+                padding: 2px 4px;
+                margin: 2px 0;
+                display: block;
+              }
+              pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                background: #f8f9fa;
+                padding: 8px;
+                border-radius: 4px;
+                color: #333;
+                font-size: 12px;
+                overflow-y: auto;
+              }
+              .response-container {
+                max-height: 300px;
+                overflow-y: auto;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+              }
+              .response-content {
+                margin: 0;
+                padding: 8px;
+              }
+              .bounds-match {
+                color: #28a745;
+                font-weight: bold;
+              }
+              .bounds-differ {
+                color: #dc3545;
+                font-weight: bold;
+              }
+              .response-bounds-html {
+                background-color: white;
+              }
+              @media print {
+                body {
+                  padding: 0;
+                  margin: 20px;
+                }
+                table {
+                  page-break-inside: avoid;
+                }
+                pre {
+                  white-space: pre-wrap;
+                  word-wrap: break-word;
+                  max-height: none;
+                }
+                .response-container {
+                  max-height: none;
+                  border: none;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <h2>Data Generator Report (${dataGeneratorResults.length} Request${dataGeneratorResults.length !== 1 ? 's' : ''} Processed)</h2>
+            
+            ${processingStatus}
+            
+            <div class="matrix-container">
+              <div class="matrix-section">
+                <h3>Confusion Matrix</h3>
+                <table>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Count</th>
+                  </tr>
+                  <tr>
+                    <td>Actual YES - Predicted YES</td>
+                    <td>${document.getElementById('actualYesPredictedYes')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual YES - Predicted NO</td>
+                    <td>${document.getElementById('actualYesPredictedNo')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual NO - Predicted YES</td>
+                    <td>${document.getElementById('actualNoPredictedYes')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual NO - Predicted NO</td>
+                    <td>${document.getElementById('actualNoPredictedNo')?.textContent || 0}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div class="matrix-section">
+                <h3>Confusion Matrix with Bounds</h3>
+                <table>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Count</th>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-BoundsMatch-FieldTypeMatch</td>
+                    <td>${document.getElementById('boundyesfieldtypeyes')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-BoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('boundyesfieldtypeno')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-NoBoundsMatch-FieldTypeMatch</td>
+                    <td>${document.getElementById('boundnofieldtypeyes')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('boundnofieldtypeno')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedNO-NoBoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('actualYesPredictedNoNoBoundsMatch')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualNo-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('actualyesbound')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualNO-PredictedNo-NoBoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('actualnobound')?.textContent || 0}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <h3>Detailed Results</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>App</th>
+                  <th>Screenshot URL</th>
+                  <th>Manual Bounds</th>
+                  <th>Field Type</th>
+                  <th>Generated Bounds</th>
+                  <th>Response Bounds</th>
+                  <th>Response</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${detailedResultsRows}
+              </tbody>
+            </table>
+            
+            <div style="text-align: right; margin-top: 20px; color: #666;">
+              <small>Generated on: ${new Date().toLocaleString()}</small>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Create and download the file
+      const blob = new Blob([reportContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `data-generator-report-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function showImageModal(imageSrc) {
+      let modal = document.getElementById('imageModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'imageModal';
+        modal.className = 'image-modal';
+        modal.innerHTML = `
+          <span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+          <img class="image-modal-content" id="modalImage">
+        `;
+        document.body.appendChild(modal);
+      }
+      const modalImg = document.getElementById('modalImage');
+      modalImg.src = imageSrc;
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeImageModal() {
+      const modal = document.getElementById('imageModal');
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }
+    }
+  </script>
+</body>
+
+</html>
