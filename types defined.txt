@@ -1,0 +1,8 @@
+Email Text Field
+Numeric Keypad Text Field
+Password Text Field
+Search Field
+Single-Line Text Field
+OTP/PIN Input Field - Not getting genearted for most - random_int
+Multi-Line Text Field ->  question || Discount Code || company and gstin || word || sentence || text || 
+Date Picker Text Field - not working yet - date_time is response

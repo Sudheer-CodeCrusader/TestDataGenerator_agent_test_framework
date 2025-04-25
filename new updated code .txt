@@ -1,0 +1,620 @@
+// ... existing code ...
+          <tr>
+            <th>App</th>
+            <th>Actual Value</th>
+            <th>Screenshot</th>
+            <th>Bound</th>
+            <th>FieldType</th>
+            <th>Response Bounds</th>
+            <th>Element</th>
+            <th>JSON</th>
+            <th>XML Name</th>
+            <th>Action</th>
+            <th>Request Body</th>
+            <th>Response</th>
+            <th>Status</th>
+          </tr>
+// ... existing code ...
+          tr.innerHTML = `
+            <td>${row["App Name"] || ""}</td>
+            <td>${row[actualValueKey] || ""}</td>
+            <td class="screenshot-cell">${screenshotHtml}</td>
+            <td class="excel-bounds-cell">${row["Bound Value"] || ""}</td>
+            <td class="field-type-cell">${row["FieldType"] || ""}</td>
+            <td class="response-bounds-cell"></td>
+            <td>${row["Element ID"] || "No Element"}</td>
+            <td>${row["JSON"] ? row["JSON"].substring(0, 15) + "..." : "No JSON"}</td>
+            <td>${row["XML Name"] || "No XML"}</td>
+            <td class="play-button-cell">
+              <button class="play-button" onclick="processIndividualRequest(${index}, this)">
+                <span class="play-icon"></span>
+              </button>
+            </td>
+            <td class="request-body-cell"><pre></pre></td>
+            <td class="response-cell"><pre></pre></td>
+            <td class="status-cell"></td>
+          `;
+// ... existing code ...
+
+// ... existing code ...
+        const manualBoundsRaw = String(dataRow["Bound Value"] || "").trim();
+        const manualBoundsArray = manualBoundsRaw.split(/\s+/).map(bound => bound.trim().toLowerCase()).filter(Boolean);
+        
+        // Get FieldType from Excel
+        const fieldTypeFromExcel = String(dataRow["FieldType"] || "").trim().toLowerCase();
+        
+        let generatedBoundsArray = [];
+        let fieldTypeMatch = false;
+        
+        if (data?.agent_response?.fields && data.agent_response.fields.length > 0) {
+          generatedBoundsArray = data.agent_response.fields
+            .map(field => {
+              // Check for field type match
+              const type = String(field?.type || "").toLowerCase();
+              const fakerFunction = String(field?.faker_function || "").toLowerCase();
+              const fieldName = String(field?.field_name || "").toLowerCase();
+              
+              // Check if any of the field type values match the Excel FieldType
+              if (fieldTypeFromExcel && (
+                  type.includes(fieldTypeFromExcel) ||
+                  fakerFunction.includes(fieldTypeFromExcel) ||
+                  fieldName.includes(fieldTypeFromExcel) ||
+                  fieldTypeFromExcel.includes(type) ||
+                  fieldTypeFromExcel.includes(fakerFunction) ||
+                  fieldTypeFromExcel.includes(fieldName)
+              )) {
+                fieldTypeMatch = true;
+              }
+              
+              return {
+                bounds: String(field?.metadata?.bounds || "").trim().toLowerCase(),
+                fieldName: field.field_name || "",
+                value: field.value !== undefined ? field.value : (field.text !== undefined ? field.text : ""),
+                type: type,
+                fakerFunction: fakerFunction
+              };
+            })
+            .filter(item => item.bounds);
+        } else {
+          const directBound = String(data?.bounds || "").trim().toLowerCase();
+          if (directBound) {
+            const type = String(data?.type || "").toLowerCase();
+            const fakerFunction = String(data?.faker_function || "").toLowerCase();
+            const fieldName = String(data?.field_name || "").toLowerCase();
+            
+            // Check for field type match in direct response
+            if (fieldTypeFromExcel && (
+                type.includes(fieldTypeFromExcel) ||
+                fakerFunction.includes(fieldTypeFromExcel) ||
+                fieldName.includes(fieldTypeFromExcel) ||
+                fieldTypeFromExcel.includes(type) ||
+                fieldTypeFromExcel.includes(fakerFunction) ||
+                fieldTypeFromExcel.includes(fieldName)
+            )) {
+              fieldTypeMatch = true;
+            }
+            
+            generatedBoundsArray.push({ 
+              bounds: directBound, 
+              fieldName: data?.field_name || "",
+              value: data?.value || data?.text || "",
+              type: type,
+              fakerFunction: fakerFunction
+            });
+          }
+        }
+        
+        const boundsMatch = manualBoundsArray.length > 0 && 
+                           manualBoundsArray.every(bound => 
+                             generatedBoundsArray.some(item => item.bounds.includes(bound))
+                           );
+
+        const formattedJson = JSON.stringify(data, null, 2);
+        const responseBoundsCell = row.querySelector('.response-bounds-cell');
+        if (responseBoundsCell) {
+          if (generatedBoundsArray.length > 0) {
+            const boundsHtml = generatedBoundsArray.map(item => {
+              const isMatch = manualBoundsArray.some(manualBound => item.bounds.includes(manualBound));
+              const className = isMatch ? "bounds-match" : "bounds-differ";
+              const fieldNameDisplay = item.fieldName !== "" ? ` - "field_name": "${item.fieldName}"` : "";
+              const valueDisplay = item.value !== "" ? ` - "value": "${item.value}"` : "";
+              const typeDisplay = item.type !== "" ? ` - "type": "${item.type}"` : "";
+              const fakerDisplay = item.fakerFunction !== "" ? ` - "faker_function": "${item.fakerFunction}"` : "";
+              return `<div class="${className}">${item.bounds}${fieldNameDisplay}${valueDisplay}${typeDisplay}${fakerDisplay}</div>`;
+            }).join('<br>');
+            responseBoundsCell.innerHTML = boundsHtml;
+          } else {
+            responseBoundsCell.innerHTML = '<span class="bounds-differ">No bounds found</span>';
+          }
+        }
+
+        if (responseCell) responseCell.textContent = formattedJson;
+        if (statusCell) {
+          const overallMatch = boundsMatch && fieldTypeMatch;
+          statusCell.innerHTML = `
+            <div class="${boundsMatch ? 'bounds-match' : 'bounds-differ'}">Response Bounds ${boundsMatch ? 'match' : 'differ'}</div>
+            <div class="${fieldTypeMatch ? 'bounds-match' : 'bounds-differ'}">Field Type ${fieldTypeMatch ? 'match' : 'differ'}</div>
+            <div class="${overallMatch ? 'bounds-match' : 'bounds-differ'}">${overallMatch ? 'Pass' : 'Fail'}</div>
+          `;
+        }
+        
+        const result = {
+          app: dataRow["App Name"] || "",
+          screenshotUrl: dataRow["Screenshot Path"] || "",
+          manualBounds: manualBoundsRaw,
+          fieldType: fieldTypeFromExcel,
+          generatedBounds: generatedBoundsArray.map(item => 
+            `${item.bounds}${item.fieldName ? ` - "field_name": "${item.fieldName}"` : ""}${item.value ? ` - "value": "${item.value}"` : ""}${item.type ? ` - "type": "${item.type}"` : ""}${item.fakerFunction ? ` - "faker_function": "${item.fakerFunction}"` : ""}`
+          ).join(" "),
+          boundsMatch: boundsMatch,
+          fieldTypeMatch: fieldTypeMatch,
+          match: boundsMatch && fieldTypeMatch,
+          response: formattedJson,
+          rowIndex: rowIndex
+        };
+// ... existing code ...
+
+
+
+// ... existing code ...
+    .bounds-match {
+      color: #28a745;
+      font-weight: bold;
+    }
+    
+    .bounds-differ {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    
+    .status-cell {
+      min-width: 120px;
+      text-align: left;
+      padding: 8px;
+    }
+    
+    .status-cell div {
+      margin: 2px 0;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    
+    .field-type-cell {
+      min-width: 150px;
+      max-width: 200px;
+    }
+// ... existing code ...
+|
+
+confisuon metrics 
+
+// ... existing code ...
+      <table id="confusionBoundsTable">
+        <tr>
+          <td>ActualYes-PredictedYES-BoundsMatch-FieldTypeMatch</td>
+          <td id="boundyesfieldtypeyes">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-BoundsMatch-NoFieldTypeMatch</td>
+          <td id="boundyesfieldtypeno">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-NoBoundsMatch-FieldTypeMatch</td>
+          <td id="boundnofieldtypeyes">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="boundnofieldtypeno">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedNO-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="actualYesPredictedNoNoBoundsMatch">0</td>
+        </tr>
+        <tr>
+          <td>ActualNo-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="actualyesbound">0</td>
+        </tr>
+        <tr>
+          <td>ActualNO-PredictedNo-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="actualnobound">0</td>
+        </tr>
+      </table>
+// ... existing code ...
+      <table id="confusionPopupBoundsTable">
+        <tr>
+          <th>Metric</th>
+          <th>Count</th>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-BoundsMatch-FieldTypeMatch</td>
+          <td id="popupBoundyesfieldtypeyes">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-BoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupBoundyesfieldtypeno">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-NoBoundsMatch-FieldTypeMatch</td>
+          <td id="popupBoundnofieldtypeyes">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupBoundnofieldtypeno">0</td>
+        </tr>
+        <tr>
+          <td>ActualYes-PredictedNO-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupActualYesPredictedNoNoBoundsMatch">0</td>
+        </tr>
+        <tr>
+          <td>ActualNo-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupActualyesbound">0</td>
+        </tr>
+        <tr>
+          <td>ActualNO-PredictedNo-NoBoundsMatch-NoFieldTypeMatch</td>
+          <td id="popupActualnobound">0</td>
+        </tr>
+      </table>
+// ... existing code ...
+
+
+// ... existing code ...
+    function updateConfusionMatrixBounds(rowData, apiResponse) {
+      const actualValueKey = Object.keys(rowData).find(key => key.toLowerCase().includes("actual value")) || "";
+      const actualValue = (rowData[actualValueKey] || "").trim().toLowerCase();
+      
+      // Use data_generation_required instead of popup_detection
+      const predictedValue = apiResponse?.agent_response?.data_generation_required === true ? "yes" : "no";
+      
+      // Extract bounds information
+      const boundFromExcel = String(rowData["Bound Value"] || "").trim().toLowerCase();
+      
+      // Get FieldType from Excel
+      const fieldTypeFromExcel = String(rowData["FieldType"] || "").trim().toLowerCase();
+      
+      // Look for bounds and field type in the fields array if it exists
+      let boundFromAPI = "";
+      let fieldTypeMatch = false;
+      
+      if (apiResponse?.agent_response?.fields && apiResponse.agent_response.fields.length > 0) {
+        // Get bounds and check field type from the first field
+        const field = apiResponse.agent_response.fields[0];
+        if (field?.metadata?.bounds) {
+          boundFromAPI = String(field.metadata.bounds).trim().toLowerCase();
+        }
+        
+        // Check field type match
+        const type = String(field?.type || "").toLowerCase();
+        const fakerFunction = String(field?.faker_function || "").toLowerCase();
+        const fieldName = String(field?.field_name || "").toLowerCase();
+        
+        if (fieldTypeFromExcel && (
+            type.includes(fieldTypeFromExcel) ||
+            fakerFunction.includes(fieldTypeFromExcel) ||
+            fieldName.includes(fieldTypeFromExcel) ||
+            fieldTypeFromExcel.includes(type) ||
+            fieldTypeFromExcel.includes(fakerFunction) ||
+            fieldTypeFromExcel.includes(fieldName)
+        )) {
+          fieldTypeMatch = true;
+        }
+      } else if (apiResponse?.agent_response?.primary_method?.element_metadata?.bounds) {
+        // Fallback to primary_method if fields aren't available
+        boundFromAPI = String(apiResponse.agent_response.primary_method.element_metadata.bounds).trim().toLowerCase();
+        
+        // Check field type match in primary method
+        const type = String(apiResponse?.type || "").toLowerCase();
+        const fakerFunction = String(apiResponse?.faker_function || "").toLowerCase();
+        const fieldName = String(apiResponse?.field_name || "").toLowerCase();
+        
+        if (fieldTypeFromExcel && (
+            type.includes(fieldTypeFromExcel) ||
+            fakerFunction.includes(fieldTypeFromExcel) ||
+            fieldName.includes(fieldTypeFromExcel) ||
+            fieldTypeFromExcel.includes(type) ||
+            fieldTypeFromExcel.includes(fakerFunction) ||
+            fieldTypeFromExcel.includes(fieldName)
+        )) {
+          fieldTypeMatch = true;
+        }
+      }
+      
+      const boundsMatched = boundFromExcel === boundFromAPI && boundFromExcel !== "";
+      
+      console.log("Confusion Matrix Bounds Update:", {
+        actualValue,
+        predictedValue,
+        boundFromExcel,
+        boundFromAPI,
+        boundsMatched,
+        fieldTypeFromExcel,
+        fieldTypeMatch,
+        data_generation_required: apiResponse?.agent_response?.data_generation_required
+      });
+
+      // Case 1: ActualYes-PredictedYES-BoundsMatch-FieldTypeMatch
+      if (actualValue === "yes" && predictedValue === "yes" && boundsMatched && fieldTypeMatch) {
+        safelyIncrementCounter("boundyesfieldtypeyes");
+      }
+      // Case 2: ActualYes-PredictedYES-BoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "yes" && predictedValue === "yes" && boundsMatched && !fieldTypeMatch) {
+        safelyIncrementCounter("boundyesfieldtypeno");
+      }
+      // Case 3: ActualYes-PredictedYES-NoBoundsMatch-FieldTypeMatch
+      else if (actualValue === "yes" && predictedValue === "yes" && !boundsMatched && fieldTypeMatch) {
+        safelyIncrementCounter("boundnofieldtypeyes");
+      }
+      // Case 4: ActualYes-PredictedYES-NoBoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "yes" && predictedValue === "yes" && !boundsMatched && !fieldTypeMatch) {
+        safelyIncrementCounter("boundnofieldtypeno");
+      }
+      // Case 5: ActualYes-PredictedNO-NoBoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "yes" && predictedValue === "no" && !boundsMatched && !fieldTypeMatch) {
+        safelyIncrementCounter("actualYesPredictedNoNoBoundsMatch");
+      }
+      // Case 6: ActualNo-PredictedYES-NoBoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "no" && predictedValue === "yes" && !boundsMatched && !fieldTypeMatch) {
+        safelyIncrementCounter("actualyesbound");
+      }
+      // Case 7: ActualNO-PredictedNo-NoBoundsMatch-NoFieldTypeMatch
+      else if (actualValue === "no" && predictedValue === "no" && !boundsMatched && !fieldTypeMatch) {
+        safelyIncrementCounter("actualnobound");
+      }
+    }
+// ... existing code ...
+
+
+
+export : 
+// ... existing code ...
+    function exportDataGeneratorResults() {
+      if (dataGeneratorResults.length === 0) {
+        alert("No results to export. Please generate data first.");
+        return;
+      }
+
+      // Generate detailed results rows
+      const detailedResultsRows = dataGeneratorResults.map(result => {
+        // Create detailed status that shows both bounds match and field type match
+        const boundsStatusHtml = result.boundsMatch ? 
+          '<div class="pass-status">Response Bounds match</div>' : 
+          '<div class="fail-status">Response Bounds differ</div>';
+        
+        const fieldTypeStatusHtml = result.fieldTypeMatch ? 
+          '<div class="pass-status">Field Type match</div>' : 
+          '<div class="fail-status">Field Type differ</div>';
+          
+        const overallStatusHtml = result.match ? 
+          '<div class="pass-status">Pass</div>' : 
+          '<div class="fail-status">Fail</div>';
+        
+        const detailedStatusHtml = `${boundsStatusHtml}${fieldTypeStatusHtml}${overallStatusHtml}`;
+        
+        return `
+          <tr>
+            <td>${result.app || ""}</td>
+            <td>${result.screenshotUrl || ""}</td>
+            <td>${result.manualBounds || ""}</td>
+            <td>${result.fieldType || ""}</td>
+            <td>${result.generatedBounds || ""}</td>
+            <td class="response-cell">
+              <div class="response-container">
+                <pre class="response-content">${result.response || ""}</pre>
+              </div>
+            </td>
+            <td>${detailedStatusHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Add processing status message if paused
+      const processingStatus = isPaused ? 
+        `<div style="background-color: #fff3cd; color: #856404; padding: 10px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ffeeba;">
+          Note: Processing was paused at ${currentProcessingIndex}/${processingQueue.length} items (${Math.round((currentProcessingIndex/processingQueue.length)*100)}% complete).
+         </div>` : '';
+
+      // Generate the report content
+      const reportContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Data Generator Report</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                max-width: 1200px;
+                margin: 20px auto;
+                padding: 20px;
+                background: #fff;
+                color: #333;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                background: #fff;
+              }
+              th, td {
+                border: 1px solid #ddd;
+                padding: 12px;
+                text-align: left;
+                color: #333;
+              }
+              th {
+                background-color: #f5f5f5;
+                font-weight: bold;
+              }
+              h2, h3 {
+                color: #333;
+                margin-top: 20px;
+              }
+              .matrix-container {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 30px;
+                gap: 20px;
+              }
+              .matrix-section {
+                flex: 1;
+              }
+              .pass-status {
+                color: #28a745;
+                font-weight: bold;
+                padding: 2px 4px;
+                margin: 2px 0;
+                display: block;
+              }
+              .fail-status {
+                color: #dc3545;
+                font-weight: bold;
+                padding: 2px 4px;
+                margin: 2px 0;
+                display: block;
+              }
+              pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                background: #f8f9fa;
+                padding: 8px;
+                border-radius: 4px;
+                color: #333;
+                font-size: 12px;
+                overflow-y: auto;
+              }
+              .response-container {
+                max-height: 300px;
+                overflow-y: auto;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+              }
+              .response-content {
+                margin: 0;
+                padding: 8px;
+              }
+              @media print {
+                body {
+                  padding: 0;
+                  margin: 20px;
+                }
+                table {
+                  page-break-inside: avoid;
+                }
+                pre {
+                  white-space: pre-wrap;
+                  word-wrap: break-word;
+                  max-height: none;
+                }
+                .response-container {
+                  max-height: none;
+                  border: none;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <h2>Data Generator Report (${dataGeneratorResults.length} Request${dataGeneratorResults.length !== 1 ? 's' : ''} Processed)</h2>
+            
+            ${processingStatus}
+            
+            <div class="matrix-container">
+              <div class="matrix-section">
+                <h3>Confusion Matrix</h3>
+                <table>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Count</th>
+                  </tr>
+                  <tr>
+                    <td>Actual YES - Predicted YES</td>
+                    <td>${document.getElementById('actualYesPredictedYes')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual YES - Predicted NO</td>
+                    <td>${document.getElementById('actualYesPredictedNo')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual NO - Predicted YES</td>
+                    <td>${document.getElementById('actualNoPredictedYes')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>Actual NO - Predicted NO</td>
+                    <td>${document.getElementById('actualNoPredictedNo')?.textContent || 0}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div class="matrix-section">
+                <h3>Confusion Matrix with Bounds</h3>
+                <table>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Count</th>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-BoundsMatch-FieldTypeMatch</td>
+                    <td>${document.getElementById('boundyesfieldtypeyes')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-BoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('boundyesfieldtypeno')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-NoBoundsMatch-FieldTypeMatch</td>
+                    <td>${document.getElementById('boundnofieldtypeyes')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('boundnofieldtypeno')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualYes-PredictedNO-NoBoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('actualYesPredictedNoNoBoundsMatch')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualNo-PredictedYES-NoBoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('actualyesbound')?.textContent || 0}</td>
+                  </tr>
+                  <tr>
+                    <td>ActualNO-PredictedNo-NoBoundsMatch-NoFieldTypeMatch</td>
+                    <td>${document.getElementById('actualnobound')?.textContent || 0}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <h3>Detailed Results</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>App</th>
+                  <th>Screenshot URL</th>
+                  <th>Manual Bounds</th>
+                  <th>Field Type</th>
+                  <th>Generated Bounds</th>
+                  <th>Response</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${detailedResultsRows}
+              </tbody>
+            </table>
+            
+            <div style="text-align: right; margin-top: 20px; color: #666;">
+              <small>Generated on: ${new Date().toLocaleString()}</small>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Create and download the file
+      const blob = new Blob([reportContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `data-generator-report-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+// ... existing code ...

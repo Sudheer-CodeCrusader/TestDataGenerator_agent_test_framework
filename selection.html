@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agents</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            margin: 0;
+            flex-direction: column;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        .agent-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+        .agent-button {
+            padding: 15px 25px;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            background-color: #ff9800;
+            color: white;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        .agent-button:hover {
+            background-color: #e68900;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Agents</h1>
+    <div class="agent-container">
+        <button class="agent-button" id="popupAgent">Popup Agent</button>
+        <button class="agent-button" id="dataGenerator">Data Generator Agent</button>
+        <button class="agent-button" id="testScenariosAgent">Data Masking Agent</button>
+        <button class="agent-button" id="guideAgent">Test Case generator Agent</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Popup Agent Button
+            document.getElementById('popupAgent').addEventListener('click', function() {
+                window.location.href = 'upload.html';
+            });
+            
+            // Data Generator Button
+            document.getElementById('dataGenerator').addEventListener('click', function() {
+                window.location.href = 'data-generator.html';
+            });
+            
+            // Test Scenarios Agent Button
+            document.getElementById('testScenariosAgent').addEventListener('click', function() {
+                alert('Test Scenarios Agent coming soon!');
+            });
+            
+            // Guide Agent Button
+            document.getElementById('guideAgent').addEventListener('click', function() {
+                alert('Guide Agent coming soon!');
+            });
+        });
+    </script>
+</body>
+</html>
